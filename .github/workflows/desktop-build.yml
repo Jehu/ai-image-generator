@@ -10,7 +10,34 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Draft-Release VOR den Builds anlegen: tauri-action darf mit GITHUB_TOKEN
+  # kein Release für einen Commit erstellen, der nicht HEAD des Default-Branch
+  # ist (403 "Resource not accessible by integration" bei getaggten älteren
+  # Commits). Existiert der Draft bereits, lädt tauri-action nur noch hoch.
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Create draft release if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh api "repos/${GITHUB_REPOSITORY}/releases" \
+            --jq ".[] | select(.tag_name==\"${GITHUB_REF_NAME}\") | .id" | head -1)
+          if [ -z "$EXISTING" ]; then
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --draft --title "Image Style Studio ${GITHUB_REF_NAME}" --notes ""
+            echo "Draft-Release ${GITHUB_REF_NAME} angelegt"
+          else
+            echo "Release ${GITHUB_REF_NAME} existiert bereits (ID ${EXISTING})"
+          fi
+
   build:
+    needs: create-release
+    # workflow_dispatch (kein Tag) überspringt create-release — Builds laufen trotzdem.
+    if: always() && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped')
     permissions:
       contents: write
     strategy:
