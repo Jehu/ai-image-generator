@@ -1,6 +1,6 @@
 [package]
 name = "image-style-studio"
-version = "0.1.0"
+version = "0.1.1"
 description = "Reproduzierbare Bildstile für KI-Bildgenerierung — Desktop-App"
 authors = ["Marco Michely"]
 license = "MIT"
