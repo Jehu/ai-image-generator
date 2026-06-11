@@ -3,6 +3,7 @@ name = "image-style-studio"
 version = "0.1.0"
 description = "Reproduzierbare Bildstile für KI-Bildgenerierung — Desktop-App"
 authors = ["Marco Michely"]
+license = "MIT"
 edition = "2021"
 
 [lib]

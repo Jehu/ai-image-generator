@@ -175,3 +175,7 @@ optional Anker-Bilder, die bei jeder Produktion als Referenz mitgeschickt werden
   `canonicalJson.ts` müssen identischen Output liefern (Tests vorhanden) — sonst brechen
   Brief-Hashes und Prompt-Reproduzierbarkeit.
 - SQLite kennt keine Scalar-Arrays → Listen/Objekte liegen als JSON-Spalten (TEXT).
+
+## Lizenz
+
+[MIT](LICENSE)
