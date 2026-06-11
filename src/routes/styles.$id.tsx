@@ -523,17 +523,21 @@ function StyleDetail() {
                         onOpen={() => openHistoryLightbox(h.outputImageIds)}
                       />
                     )}
-                    <span className="min-w-0 flex-1 truncate">{h.subject}</span>
-                    <span
-                      title={`${h.provider} · ${h.modelId}`}
-                      className="text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px]"
-                    >
-                      {modelShortLabel(h.modelId)}
-                    </span>
-                    <span className="text-muted-foreground shrink-0">
-                      {new Date(h.createdAt).toLocaleString('de-DE')} ·{' '}
-                      {h.costUsd != null ? `$${h.costUsd.toFixed(3)}` : '—'}
-                    </span>
+                    {/* Zweizeilig: Motiv prominent, Metadaten als dezente Subline */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate">{h.subject}</p>
+                      <p
+                        title={`${h.provider} · ${h.modelId}`}
+                        className="text-muted-foreground mt-0.5 truncate text-[10px]"
+                      >
+                        {modelShortLabel(h.modelId)} ·{' '}
+                        {new Date(h.createdAt).toLocaleString('de-DE', {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}{' '}
+                        · {h.costUsd != null ? `$${h.costUsd.toFixed(3)}` : '—'}
+                      </p>
+                    </div>
                     {style && h.outputImageIds.length > 0 && (
                       <HistorySetDownloadButton
                         styleName={style.name}
