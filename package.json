@@ -14,6 +14,8 @@
     "tauri": "tauri",
     "dev:desktop": "tauri dev",
     "build:desktop": "tauri build",
+    "build:release": "TAURI_SIGNING_PRIVATE_KEY=\"$(cat \"$HOME/.tauri/image-style-studio.key\")\" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=\"\" tauri build",
+    "build:release:universal": "rustup target add x86_64-apple-darwin aarch64-apple-darwin && TAURI_SIGNING_PRIVATE_KEY=\"$(cat \"$HOME/.tauri/image-style-studio.key\")\" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=\"\" tauri build --target universal-apple-darwin",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check ."

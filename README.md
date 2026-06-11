@@ -102,7 +102,9 @@ und übernimmt sie automatisch ins App-Data-Verzeichnis. Die Übernahme läuft g
 | Script | Zweck |
 |---|---|
 | `npm run dev:desktop` | Desktop-App im Dev-Modus (Hot-Reload) |
-| `npm run build:desktop` | Desktop-Bundles bauen (dmg/msi/AppImage/…) |
+| `npm run build:release` | Release-Bundle inkl. Updater-Signatur (lädt den Key aus `~/.tauri/`) |
+| `npm run build:release:universal` | wie oben, als macOS-Universal-Build (Apple Silicon + Intel) |
+| `npm run build:desktop` | Desktop-Bundles ohne Updater-Signatur (CI setzt den Key via Secret) |
 | `npm run dev` | Nur das Frontend im Browser (ohne Backend-Funktionen) |
 | `npm run build` | Frontend-Produktions-Build (`dist/`) |
 | `npm test` | Frontend-Unit-Tests (Vitest) |
