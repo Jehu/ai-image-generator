@@ -110,6 +110,15 @@ und übernimmt sie automatisch ins App-Data-Verzeichnis. Die Übernahme läuft g
 | `npm test` | Frontend-Unit-Tests (Vitest) |
 | `cargo test` (in `src-tauri/`) | Rust-Unit-Tests (Prompt, Hashing, Storage, DB) |
 
+## Installation (Nutzer)
+
+Fertige Builds gibt es auf der [Releases-Seite](https://github.com/Jehu/ai-image-generator/releases/latest):
+macOS-DMG (universal), Windows-Setup (`.exe`/`.msi`), Linux (`.AppImage`/`.deb`).
+Für Arch-basierte Distributionen (CachyOS, EndeavourOS, …) liegt unter
+[`packaging/aur/`](packaging/aur/) ein AUR-Paket (`image-style-studio-bin`).
+macOS zeigt mangels Code-Signing beim ersten Start eine Gatekeeper-Warnung
+(Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen").
+
 ## Releases & Auto-Update
 
 Der GitHub-Workflow `.github/workflows/desktop-build.yml` baut bei einem `v*`-Tag

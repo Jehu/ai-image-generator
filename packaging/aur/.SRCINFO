@@ -1,0 +1,22 @@
+pkgbase = image-style-studio-bin
+	pkgdesc = Reproduzierbare Bildstile für KI-Bildgenerierung finden, fixieren und konsistent anwenden (Tauri-Desktop-App, OpenRouter)
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/Jehu/ai-image-generator
+	arch = x86_64
+	license = MIT
+	depends = webkit2gtk-4.1
+	depends = gtk3
+	depends = libsoup3
+	depends = gdk-pixbuf2
+	depends = glib2
+	depends = cairo
+	depends = pango
+	depends = hicolor-icon-theme
+	provides = image-style-studio
+	conflicts = image-style-studio
+	options = !strip
+	source_x86_64 = image-style-studio-bin-0.1.0.deb::https://github.com/Jehu/ai-image-generator/releases/download/v0.1.0/Image.Style.Studio_0.1.0_amd64.deb
+	sha256sums_x86_64 = a8b06ad65fe4f99a1f5bf2c356ed1cd14a9c098b312487df0ae79c90f39c3e7c
+
+pkgname = image-style-studio-bin

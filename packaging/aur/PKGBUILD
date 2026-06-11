@@ -1,0 +1,57 @@
+# Maintainer: Marco Michely <email@michelyweb.de>
+# AUR-Paket für Image Style Studio — paketiert das offizielle Release-.deb.
+# Bei jedem Release: pkgver anheben, sha256sums_x86_64 aktualisieren
+# (siehe packaging/aur/README.md), .SRCINFO neu generieren.
+
+pkgname=image-style-studio-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Reproduzierbare Bildstile für KI-Bildgenerierung finden, fixieren und konsistent anwenden (Tauri-Desktop-App, OpenRouter)"
+arch=('x86_64')
+url="https://github.com/Jehu/ai-image-generator"
+license=('MIT')
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'libsoup3'
+  'gdk-pixbuf2'
+  'glib2'
+  'cairo'
+  'pango'
+  'hicolor-icon-theme'
+)
+provides=('image-style-studio')
+conflicts=('image-style-studio')
+options=('!strip')
+source_x86_64=("${pkgname}-${pkgver}.deb::${url}/releases/download/v${pkgver}/Image.Style.Studio_${pkgver}_amd64.deb")
+sha256sums_x86_64=('a8b06ad65fe4f99a1f5bf2c356ed1cd14a9c098b312487df0ae79c90f39c3e7c')
+
+package() {
+  bsdtar -xOf "${pkgname}-${pkgver}.deb" data.tar.gz | bsdtar -xzf - -C "${pkgdir}"
+  chmod 755 "${pkgdir}/usr/bin/image-style-studio"
+
+  # MIT-Lizenztext aus dem Repo-Tag mitliefern (nicht Teil des .deb)
+  install -Dm644 /dev/stdin "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE" <<'EOF'
+MIT License
+
+Copyright (c) 2026 Marco Michely
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+EOF
+}
