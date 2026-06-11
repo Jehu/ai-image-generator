@@ -61,6 +61,21 @@ interface MotifResult {
   costUsd: number
 }
 
+// Kurznamen der kuratierten Modelle für die Historie (voller Name im Tooltip).
+const MODEL_SHORT_LABELS: Record<string, string> = {
+  'google/gemini-3-pro-image-preview': 'Nano Banana Pro',
+  'google/gemini-3.1-flash-image-preview': 'Nano Banana 2',
+  'google/gemini-2.5-flash-image': 'Nano Banana',
+  'openai/gpt-5-image': 'GPT-5 Image',
+  'openai/gpt-5-image-mini': 'GPT-5 Image Mini',
+  // Legacy-Generierungen aus der Web-App-Ära (direkter Gemini-Provider)
+  'gemini-3-pro-image': 'Nano Banana Pro',
+}
+
+function modelShortLabel(modelId: string): string {
+  return MODEL_SHORT_LABELS[modelId] ?? modelId.split('/').pop() ?? modelId
+}
+
 function StyleDetail() {
   const { id } = useParams({ from: '/styles/$id' })
   const queryClient = useQueryClient()
@@ -509,6 +524,12 @@ function StyleDetail() {
                       />
                     )}
                     <span className="min-w-0 flex-1 truncate">{h.subject}</span>
+                    <span
+                      title={`${h.provider} · ${h.modelId}`}
+                      className="text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px]"
+                    >
+                      {modelShortLabel(h.modelId)}
+                    </span>
                     <span className="text-muted-foreground shrink-0">
                       {new Date(h.createdAt).toLocaleString('de-DE')} ·{' '}
                       {h.costUsd != null ? `$${h.costUsd.toFixed(3)}` : '—'}

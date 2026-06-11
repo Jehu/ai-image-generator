@@ -55,7 +55,7 @@ Bild den Prompt neu zu tüfteln.
   das Modell ist pro Generierung umschaltbar.
 - **Bibliothek** — Stile taggen, durchsuchen, duplizieren und versionieren.
 - **Ergebnisse verwalten** — Historie mit Vorschau, Lightbox, Original-Download, Stapel-Download
-  als ZIP und Kostenanzeige pro Lauf.
+  als ZIP sowie Kosten- und Modellanzeige pro Lauf.
 - **Teilen & sichern** — Stile als JSON exportieren und wieder importieren.
 - **Auto-Update** — die App prüft beim Start auf neue Versionen (GitHub Releases) und
   installiert nach Rückfrage.
