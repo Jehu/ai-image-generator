@@ -2,14 +2,14 @@ import { createFileRoute, Link, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Download } from 'lucide-react'
-import { generateImage } from '#/server/generate'
+import { generateImage } from '#/ipc/generate'
 import {
   getStyle,
   listGenerations,
   listStyleVersions,
   updateStyle,
-} from '#/server/styles'
-import { addAnchorImage, getImageDataUrl } from '#/server/images'
+} from '#/ipc/styles'
+import { addAnchorImage, getImageDataUrl } from '#/ipc/images'
 import {
   downloadImagesAsZip,
   downloadStyleAsJson,
@@ -88,8 +88,8 @@ function StyleDetail() {
   const [imageSize, setImageSize] = useState<ImageSize>('2K')
   const [count, setCount] = useState(1)
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevelOpt>('high')
-  const [provider, setProvider] = useState('gemini')
-  const [modelId, setModelId] = useState('gemini-3-pro-image')
+  const [provider, setProvider] = useState('openrouter')
+  const [modelId, setModelId] = useState('google/gemini-3-pro-image-preview')
   const initialized = useRef<string | null>(null)
 
   useEffect(() => {
@@ -616,7 +616,7 @@ function HistorySetDownloadButton({
       await downloadImagesAsZip(images, `${styleName}-${subject}`)
     },
     onError: (err) => {
-      alert((err as Error).message)
+      alert((err).message)
     },
   })
   return (

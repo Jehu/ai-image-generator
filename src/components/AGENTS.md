@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Wiederverwendbare React-Komponenten ohne eigenen Server-Zugriff. Alle Daten kommen als Props oder via TanStack Query-Hooks, die Server Functions aus `#/server/` aufrufen.
+Wiederverwendbare React-Komponenten ohne eigenen Server-Zugriff. Alle Daten kommen als Props oder via TanStack Query-Hooks, die IPC-Adapter aus `#/ipc/` aufrufen.
 
 ## Ownership
 
@@ -10,8 +10,8 @@ Alle `.tsx`-Dateien in diesem Verzeichnis.
 
 ## Local Contracts
 
-- **Kein direkter Prisma- oder Storage-Import** — Komponenten laufen im Client-Bundle. Server-Seite bleibt in `src/server/`.
-- **Kein direkter API-Key-Zugriff** — `GEMINI_API_KEY` und andere Secrets sind ausschließlich serverseitig.
+- **Kein direkter `invoke`-Aufruf** — Backend-Zugriff nur über `#/ipc/`-Adapter.
+- **Kein direkter API-Key-Zugriff** — API-Keys und andere Secrets leben ausschließlich im Rust-Backend.
 - Shadcn-Komponenten via `pnpm dlx shadcn@latest add <name>` installieren; die generierten Dateien landen je nach Konfiguration unter `src/components/ui/`.
 
 ## Komponenten-Übersicht

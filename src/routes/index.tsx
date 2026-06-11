@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
-import { generateImage } from '#/server/generate'
-import { analyzeStyleFromImage } from '#/server/analyze'
+import { generateImage } from '#/ipc/generate'
+import { analyzeStyleFromImage } from '#/ipc/analyze'
 import { fileToDataUrl, parseDataUrl } from '#/lib/fileToDataUrl'
 import { StyleEditor } from '#/components/StyleEditor'
 import { ResultGrid } from '#/components/ResultGrid'
@@ -45,8 +45,8 @@ function Playground() {
   const [imageSize, setImageSize] = useState<ImageSize>('2K')
   const [count, setCount] = useState(2)
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevelOpt>('high')
-  const [provider, setProvider] = useState('gemini')
-  const [modelId, setModelId] = useState('gemini-3-pro-image')
+  const [provider, setProvider] = useState('openrouter')
+  const [modelId, setModelId] = useState('google/gemini-3-pro-image-preview')
   const [saveOpen, setSaveOpen] = useState(false)
   const analyzeFileRef = useRef<HTMLInputElement>(null)
   // Feedback nach "Stil aus Bild ableiten": Ring-Flash am Editor + Banner.

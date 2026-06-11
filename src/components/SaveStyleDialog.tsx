@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createStyle } from '#/server/styles'
+import { createStyle } from '#/ipc/styles'
 import { parseList } from '#/lib/styleObject'
 import type { JsonObject } from '#/lib/json'
 import type { GenerateParams } from '#/lib/providers/types'

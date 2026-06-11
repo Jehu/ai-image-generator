@@ -6,8 +6,8 @@ import {
   deleteStyle,
   duplicateStyle,
   listStyles,
-} from '#/server/styles'
-import { getImageDataUrl } from '#/server/images'
+} from '#/ipc/styles'
+import { getImageDataUrl } from '#/ipc/images'
 import { readStyleImport } from '#/lib/export'
 import type { StyleExport } from '#/lib/export'
 import { asImageKind, getKind, KIND_LIST } from '#/lib/kinds'

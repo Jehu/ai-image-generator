@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getSettingsInfo } from '#/server/settings'
+import { getSettingsInfo } from '#/ipc/settings'
 import {
   addCameraBody,
   deleteCameraBody,
   listCameraBodies,
-} from '#/server/cameras'
+} from '#/ipc/cameras'
 import { CAMERA_BODIES } from '#/lib/taxonomy'
 
 export const Route = createFileRoute('/settings')({ component: Settings })

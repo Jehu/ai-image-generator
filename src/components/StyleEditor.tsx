@@ -6,7 +6,7 @@ import type { JsonObject, JsonValue } from '#/lib/json'
 import type { FieldDef, GroupDef } from '#/lib/schema/fields'
 import { InfoHint } from '#/components/InfoHint'
 import { CAMERA_BODIES } from '#/lib/taxonomy'
-import { listCameraBodies } from '#/server/cameras'
+import { listCameraBodies } from '#/ipc/cameras'
 import { getKind } from '#/lib/kinds'
 import type { ImageKind } from '#/lib/kinds'
 import {

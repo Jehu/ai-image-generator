@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Dateibasiertes Routing via TanStack Router. Jede Datei hier entspricht einer Route. Die Route-Komponenten halten den UI-State und orchestrieren Server Functions via TanStack Query.
+Dateibasiertes Routing via TanStack Router. Jede Datei hier entspricht einer Route. Die Route-Komponenten halten den UI-State und orchestrieren IPC-Adapter (`#/ipc/`) via TanStack Query.
 
 ## Ownership
 
@@ -12,8 +12,8 @@ Alle Routen-Dateien in diesem Verzeichnis. `src/routeTree.gen.ts` (eine Ebene h�
 
 - **`routeTree.gen.ts` nie anfassen** — wird von `npm run generate-routes` (bzw. automatisch im Dev-Server) neu erzeugt. Manuelle Änderungen werden überschrieben.
 - Namenskonvention: `segment.index.tsx` für Index-Routes, `segment.$param.tsx` für parametrisierte Routes.
-- Routen-Komponenten importieren Server Functions aus `#/server/` und rufen sie ausschließlich über TanStack Query (`useQuery` / `useMutation`) auf — kein direkter `await` auf Top-Level.
-- Kein direkter Prisma- oder Storage-Import in Routen-Dateien; das bleibt `src/server/`.
+- Routen-Komponenten importieren IPC-Adapter aus `#/ipc/` und rufen sie ausschließlich über TanStack Query (`useQuery` / `useMutation`) auf — kein direkter `await` auf Top-Level.
+- Kein direkter `invoke`-Aufruf in Routen-Dateien; Backend-Zugriff bleibt in `src/ipc/`.
 
 ## Routen-Übersicht
 

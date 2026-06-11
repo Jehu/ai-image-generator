@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { addAnchorImage, getStyleAnchors, removeAnchorImage } from '#/server/images'
+import { addAnchorImage, getStyleAnchors, removeAnchorImage } from '#/ipc/images'
 import { fileToDataUrl } from '#/lib/fileToDataUrl'
 
 export function AnchorManager({ styleId }: { styleId: string }) {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listAvailableModels } from '#/server/models'
+import { listAvailableModels } from '#/ipc/models'
 
 /**
  * Dropdown zur Wahl des Bildmodells. Lädt die Modelle der Provider, deren

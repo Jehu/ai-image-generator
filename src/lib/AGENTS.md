@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Gemeinsam genutzte Bibliothek: Typen, Utilities, Prompt-Kompilierung und sonstige frameworkunabhängige Logik. Nur `src/lib/storage/` und `src/lib/providers/` dürfen serverseitige Abhängigkeiten haben.
+Gemeinsam genutzte Bibliothek: Typen, Utilities, Prompt-Kompilierung und sonstige frameworkunabhängige Logik. Alles hier ist browser-sicher — serverseitige Logik lebt im Rust-Backend (`src-tauri/`).
 
 ## Ownership
 
@@ -38,4 +38,3 @@ npm test   # deckt compile.test.ts, photoStyle.test.ts, styleObject.test.ts, exp
 - [`kinds/AGENTS.md`](kinds/AGENTS.md) — Bildart-Registry (foto, illustration, infografik)
 - [`providers/AGENTS.md`](providers/AGENTS.md) — ImageProvider-Interface; Gemini-, OpenAI- und OpenRouter-Implementierung
 - [`schema/AGENTS.md`](schema/AGENTS.md) — Zod-Fotostil-Schema (Single Source of Truth für Foto)
-- [`storage/AGENTS.md`](storage/AGENTS.md) — StorageAdapter-Interface, lokale Implementierung
