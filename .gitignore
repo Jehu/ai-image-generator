@@ -39,3 +39,6 @@ coverage
 
 # OS / Editor
 .DS_Store
+
+# Tauri (Rust-Backend)
+src-tauri/target

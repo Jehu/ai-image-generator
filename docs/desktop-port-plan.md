@@ -1,5 +1,12 @@
 # Desktop-Port-Plan: Image Style Studio → native Rust-Desktop-App
 
+> **Status (2026-06-11): UMGESETZT.** Alle Phasen implementiert; Code-Signing wurde
+> per Entscheidung übersprungen (unsignierte Builds, Updater-Keypair vorhanden).
+> Abweichung vom Plan: **rusqlite statt sqlx** (synchron, bundled — weniger
+> Build-Komplexität bei identischem Schema); `analyze`/`brief` laufen wie unter
+> „Festlegungen" beschrieben über OpenRouter. Architektur-Doku: README.md + CLAUDE.md
+> + AGENTS.md-Hierarchie. Dieses Dokument bleibt als Planungs-/Entscheidungsreferenz.
+
 **Stand:** 2026-06-11
 **Entscheidung:** Tauri 2 · React-Frontend behalten · Backend nach Rust portieren.
 

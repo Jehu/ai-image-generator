@@ -17,17 +17,15 @@ für `AGENTS.md` (unten) — beide Dokument-Ebenen aktuell halten.
 ## Commands
 
 ```bash
-npm run dev           # Dev-Server auf http://localhost:3000
-npm run build         # Produktions-Build
-npm test              # Unit-Tests (Vitest, ohne Browser)
-npm run test:gen      # Einmaliger End-to-End-Gemini-Test (kostet API-Credits)
-npm run db:push       # SQLite-Schema anlegen/synchronisieren (nach Schema-Änderungen)
-npm run db:migrate    # Migration erstellen (für Produktions-Szenarien)
-npm run db:studio     # Prisma Studio öffnen
-npm run db:seed       # Seed-Daten laden
+npm run dev:desktop   # Desktop-App im Dev-Modus (Vite + Tauri, Hot-Reload)
+npm run build:desktop # Desktop-Bundles bauen (dmg/msi/AppImage/…)
+npm run dev           # Nur Frontend im Browser (Backend-Aufrufe schlagen fehl)
+npm run build         # Frontend-Produktions-Build (dist/)
+npm test              # Frontend-Unit-Tests (Vitest)
 npm run generate-routes  # Route-Tree manuell neu generieren (läuft auch im Dev automatisch)
 npm run lint          # ESLint
 npm run format        # Prettier + ESLint --fix
+cargo test --manifest-path src-tauri/Cargo.toml   # Rust-Unit-Tests
 ```
 
 Shadcn-Komponenten hinzufügen:
@@ -37,54 +35,58 @@ pnpm dlx shadcn@latest add <component>
 
 ## Architektur
 
-**TanStack Start** (Vite 8 + TanStack Router) als Full-Stack-Framework. Der Dev-Server läuft mit Nitro als Server-Runtime. React 19, TypeScript 6, TailwindCSS v4.
+**Tauri 2 Desktop-App**: React 19 SPA (Vite 8 + TanStack Router) in der System-WebView, komplettes Backend in Rust (`src-tauri/`). Kein Node zur Laufzeit, kein SSR. TypeScript 6, TailwindCSS v4, rusqlite/SQLite, reqwest → OpenRouter.
 
-### Routing und Server Functions
+### Routing und IPC
 
 Dateibasiertes Routing in `src/routes/`. Die Datei `src/routeTree.gen.ts` wird **automatisch generiert** — nie manuell bearbeiten. Neue Routen als Dateien in `src/routes/` anlegen, Namenskonvention: `segment.$param.tsx` oder `segment.index.tsx`.
 
-Server-seitige Logik wird über **TanStack Start Server Functions** (`createServerFn`) in `src/server/` gebündelt. Der API-Key und Prisma laufen nur im Server-Kontext.
+Backend-Logik liegt in **Tauri-Commands** (`src-tauri/src/commands/`). Das Frontend ruft sie ausschließlich über die **IPC-Adapter** in `src/ipc/` auf — dünne Wrapper mit denselben Signaturen wie die früheren Server Functions (`fn({ data })`-Konvention, Command-Arg heißt `input`). API-Keys leben nur im Rust-Backend.
 
 ### Kritische Implementierungsregeln
 
-1. **Prisma und Storage nur dynamisch importieren** — niemals statischer Top-Level-Import von `#/db` oder `#/lib/storage`. Nur innerhalb von Server-Function-Handlern per `await import('#/db')`. Statische Imports leaken Node-Code (`fileURLToPath`) ins Client-Bundle und crashen im Browser.
+1. **Backend-Aufrufe nur über `src/ipc/*`** — nie `invoke` direkt in Routen/Komponenten. Neue Backend-Funktion = Rust-Command (`commands/` + Registrierung in `lib.rs`) + IPC-Adapter.
 
-2. **Server-Function-Rückgaben müssen serialisierbar sein** — keine `Date`-Objekte, keine Prisma-Modell-Typen direkt. Stattdessen DTOs aus `src/lib/types.ts` (`StyleDTO`, `GenerationDTO` etc.) verwenden oder Dates als ISO-Strings serialisieren.
+2. **DTO-Kontrakt beidseitig** — `src-tauri/src/dto.rs` (serde camelCase, ISO-Dates) spiegelt `src/lib/types.ts`. Shape-Änderungen immer synchron.
 
-3. **SQLite hat keine Scalar-Arrays** — Arrays und strukturierte Objekte (tags, anchorImageIds, styleJson, params) liegen als `Json`-Spalten in Prisma und werden als `unknown`/`JsonObject` behandelt. Für Queries immer casten: `(value as string[])`.
+3. **Prompt-/Hash-Parität Rust ↔ TS** — `prompt.rs` ↔ `compile.ts`, `canonical.rs` ↔ `canonicalJson.ts`: byte-identischer Output (serde_json `preserve_order` nicht entfernen). Sonst brechen `briefSourceHash` und Prompt-Reproduzierbarkeit.
+
+4. **SQLite hat keine Scalar-Arrays** — Arrays/Objekte (tags, anchorImageIds, styleJson, params) liegen als JSON-Strings in TEXT-Spalten; Schema ist 1:1 Prisma-kompatibel (migrierte `dev.db` läuft unverändert).
+
+5. **rusqlite ist synchron** — DB-Guard nie über ein `.await` halten (erst lesen, droppen, dann HTTP, dann neu locken).
 
 ### Datenfluss (Kern-Feature)
 
 ```
 Playground (src/routes/index.tsx)
   → StyleEditor (JSON-Block) + subject (Textarea)
-  → generateImage Server Function (src/server/generate.ts)
-      → Stil-Anker aus DB laden (wenn styleId gesetzt)
-      → compilePrompt() → JSON-Prompt-Text
-      → geminiProvider.generate() → Gemini API
+  → generateImage (src/ipc/generate.ts) → invoke('generate_image')
+      → commands/generate.rs: Stil-Anker aus DB laden (wenn styleId gesetzt)
+      → prompt.rs::compile_prompt() → JSON-Prompt-Text
+      → provider.rs::generate() → OpenRouter Chat-Completions (modalities image+text)
   → ResultGrid zeigt Bilder als data-URLs
 ```
 
-### Provider-Abstraktion
+### Provider (nur OpenRouter)
 
-`src/lib/providers/index.ts` exportiert `getProvider(id)`. Derzeit nur `gemini` implementiert (`src/lib/providers/gemini.ts`). Neue Provider (Imagen, GPT-Image) implementieren das `ImageProvider`-Interface aus `src/lib/providers/types.ts` und dort registrieren.
+`src-tauri/src/provider.rs`: kuratierte Modellliste (`OPENROUTER_MODELS`), Generierung, Pricing-Cache (6 h). Stil-Analyse (Vision) und Style-Briefs laufen über `src-tauri/src/llm.rs`, ebenfalls OpenRouter (Default `google/gemini-2.5-flash`). Legacy-Stile mit `provider: "gemini"` mappt `resolve_model()` transparent. `src/lib/providers/types.ts` enthält nur noch die Frontend-Typen.
 
 ### Stil-Schema (Single Source of Truth)
 
 `src/lib/schema/photoStyle.ts` — Zod-Schema (`looseObject` → unbekannte Keys bleiben erhalten für JSON-Escape-Hatch). Das Schema treibt:
 - Formular-Rendering im `StyleEditor`
-- Validierung beim Speichern
+- Validierung beim Speichern und nach der Stil-Analyse (clientseitig in `src/ipc/analyze.ts`)
 - Typen im gesamten Frontend
 
-### Storage-Adapter
+### Storage
 
-`src/lib/storage/local.ts` speichert Bilder lokal unter `data/images/` (konfigurierbar via `IMAGE_DIR` env-Variable). Für S3/Cloud-Storage: neuen Adapter als `StorageAdapter`-Interface implementieren und in `src/lib/storage/index.ts` registrieren, ohne Aufrufer anzupassen.
+`src-tauri/src/storage.rs` speichert Bilder als Dateien im App-Data-Verzeichnis (`data/images/`, via `IMAGE_DIR` überschreibbar); in der DB steht der relative Pfad. Auslieferung an die UI als data-URLs.
 
 ### Konsistenz-Mechanismus (Stil-Anker)
 
-Gemini 3 Pro Image unterstützt keine Seeds. Konsistenz (~80–95 %) wird über **Anker-Bilder** erreicht: ein gespeicherter Stil kann bis zu 11 Referenzbilder pinnen (`anchorImageIds`). Diese werden bei jeder Produktion als `inlineData`-Parts vor dem Prompt-Text mitgeschickt. Ohne Anker: ~50–65 % Konsistenz.
+Die Bildmodelle unterstützen keine Seeds. Konsistenz (~80–95 %) wird über **Anker-Bilder** erreicht: ein gespeicherter Stil kann bis zu 11 Referenzbilder pinnen (`anchorImageIds`). Diese werden bei jeder Produktion als `image_url`-Parts vor dem Prompt-Text mitgeschickt. Ohne Anker: ~50–65 % Konsistenz.
 
-### Datenmodell (Prisma)
+### Datenmodell (SQLite, Prisma-kompatibel)
 
 - `Style` — gespeicherter Stil mit `styleJson`, `defaultParams`, `anchorImageIds`
 - `StyleVersion` — Versionsverlauf (wird beim Update angelegt)
@@ -92,13 +94,19 @@ Gemini 3 Pro Image unterstützt keine Seeds. Konsistenz (~80–95 %) wird über 
 - `Image` — Bild-Metadaten; `kind` ist `output | anchor | upload | reference`
 - `CameraBody` — Kamera-Presets für den StyleEditor
 
+Schema in `src-tauri/src/db.rs` (`migrate()`, idempotent). Beim ersten Start übernimmt `legacy_migrate.rs` eine vorhandene Web-App-DB (`prisma/data/dev.db` + `data/images`, auch via `LEGACY_DATA_DIR`).
+
 ### Import-Alias
 
 `#/*` → `./src/*` (in `package.json` `imports` und `tsconfig.json` konfiguriert). Immer `#/` statt relativer Pfade verwenden.
 
 ## Umgebungsvariablen
 
-Siehe `.env.example`. Pflichtfeld: `GEMINI_API_KEY` (von https://aistudio.google.com/apikey). Nach Änderungen an `.env` den Dev-Server neu starten.
+Siehe `.env.example`. Pflichtfeld: `OPENROUTER_API_KEY` (https://openrouter.ai/keys) — im Dev-Modus via `.env`, in der installierten App via Env oder `config.json` im App-Data-Verzeichnis. Nach Änderungen Dev-Modus neu starten.
+
+## Releases
+
+`v*`-Tag pushen → `.github/workflows/desktop-build.yml` baut macOS/Windows/Linux-Bundles als Release-Draft. **Kein OS-Code-Signing** (Entscheidung 2026-06-11). Auto-Update über Tauri-Updater (Keypair: Public Key in `tauri.conf.json`, privater Schlüssel `~/.tauri/image-style-studio.key` bzw. CI-Secret `TAURI_SIGNING_PRIVATE_KEY`).
 
 # DOX framework
 
@@ -185,9 +193,8 @@ When the user requests a durable behavior change, record it here or in the relev
 - [`AGENTS.md`](AGENTS.md) — Root DOX-Rail: kritische Regeln, Projektübersicht, vollständiger Child-Index
   - [`src/routes/AGENTS.md`](src/routes/AGENTS.md) — Dateibasiertes Routing
   - [`src/components/AGENTS.md`](src/components/AGENTS.md) — React-UI-Komponenten
-  - [`src/server/AGENTS.md`](src/server/AGENTS.md) — Server Functions
+  - [`src/ipc/AGENTS.md`](src/ipc/AGENTS.md) — IPC-Adapter (Frontend ↔ Rust-Backend)
   - [`src/lib/AGENTS.md`](src/lib/AGENTS.md) — Shared Library
-    - [`src/lib/providers/AGENTS.md`](src/lib/providers/AGENTS.md) — ImageProvider-Interface
+    - [`src/lib/providers/AGENTS.md`](src/lib/providers/AGENTS.md) — Provider-Typen (Frontend)
     - [`src/lib/schema/AGENTS.md`](src/lib/schema/AGENTS.md) — Zod-Schema (Single Source of Truth)
-    - [`src/lib/storage/AGENTS.md`](src/lib/storage/AGENTS.md) — StorageAdapter-Interface
-  - [`prisma/AGENTS.md`](prisma/AGENTS.md) — Datenmodell und Migrationen
+  - [`src-tauri/AGENTS.md`](src-tauri/AGENTS.md) — Rust-Backend: Commands, Provider, DB, Storage

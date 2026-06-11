@@ -1,9 +1,15 @@
-# Image Style Studio
+# Image Style Studio (Desktop)
 
-Lokales Tool, um **reproduzierbare Bildstile** für KI-Bildgenerierung (Gemini 3 Pro
-Image / „Nano Banana Pro", optional OpenAI GPT Image oder Modelle über OpenRouter) zu finden,
-zu fixieren und konsistent anzuwenden — über drei **Bildarten**: **Foto**, **Illustration**
-und **Infografik**.
+Native **Desktop-App** (macOS · Windows · Linux), um **reproduzierbare Bildstile** für
+KI-Bildgenerierung zu finden, zu fixieren und konsistent anzuwenden — über drei **Bildarten**:
+**Foto**, **Illustration** und **Infografik**. Bildmodelle laufen über **OpenRouter**
+(Nano Banana Pro / 2 / 1 = Gemini 3 Pro / 3.1 Flash / 2.5 Flash Image, GPT-5 Image,
+GPT-5 Image Mini) — ein einziger API-Key.
+
+Die App ist ein Fork der Web-Variante
+([ai-image-generator-ui](https://github.com/Jehu/ai-image-generator-ui)), umgebaut auf
+**Tauri 2 + Rust-Backend**: kein Server, kein Node zur Laufzeit — React-UI in der
+System-WebView, Datenhaltung und KI-Calls in Rust.
 
 **Workflow:** Im *Playground* die Bildart wählen, einen Stil per JSON/Formular finden → als
 Stil speichern → in *Produktion* nur noch das Motiv beschreiben → optisch konsistente Bilder.
@@ -45,13 +51,14 @@ Bild den Prompt neu zu tüfteln.
   mitgeschickt und heben die optische Konsistenz deutlich an (siehe unten).
 - **In Produktion gehen** — gespeicherten Stil wählen, nur noch Motive beschreiben (eine pro Zeile
   = Stapel) und konsistente Varianten erzeugen.
-- **Modell wählen** — Google Gemini (Nano Banana Pro) und OpenAI (GPT Image) direkt, oder eine
-  kuratierte Auswahl über **OpenRouter** (ein Key statt Vendor-Keys je Anbieter); sind mehrere
-  Keys gesetzt, lässt sich das Modell pro Generierung umschalten.
+- **Modell wählen** — kuratierte Bildmodelle über **OpenRouter** (ein Key für alle Anbieter);
+  das Modell ist pro Generierung umschaltbar.
 - **Bibliothek** — Stile taggen, durchsuchen, duplizieren und versionieren.
 - **Ergebnisse verwalten** — Historie mit Vorschau, Lightbox, Original-Download, Stapel-Download
   als ZIP und Kostenanzeige pro Lauf.
 - **Teilen & sichern** — Stile als JSON exportieren und wieder importieren.
+- **Auto-Update** — die App prüft beim Start auf neue Versionen (GitHub Releases) und
+  installiert nach Rückfrage.
 
 ### Typische Anwendungsfälle
 
@@ -60,65 +67,104 @@ Bild den Prompt neu zu tüfteln.
 - Eine **Social-Media-Serie** mit wiedererkennbarer Ästhetik.
 - Einen **Marken- oder Kunden-Look** schnell treffen — per „Stil aus Bild ableiten".
 
-> Hinweis: Du brauchst einen eigenen API-Key (Google Gemini, optional OpenAI oder OpenRouter).
+> Hinweis: Du brauchst einen eigenen **OpenRouter-API-Key** (https://openrouter.ai/keys).
 > Generierungen laufen über deinen Account und verursachen die jeweiligen Anbieterkosten; die
-> geschätzten Kosten pro Lauf werden angezeigt.
+> Kosten pro Lauf werden angezeigt (bevorzugt aus `usage.cost` der API-Antwort).
 
-## Setup
+## Setup (Entwicklung)
+
+Voraussetzungen: Node 22+, Rust (stable), plattformübliche
+[Tauri-Voraussetzungen](https://v2.tauri.app/start/prerequisites/).
 
 ```bash
 npm install
-cp .env.example .env        # GEMINI_API_KEY eintragen (https://aistudio.google.com/apikey)
-                            # optional OPENAI_API_KEY für GPT-Image-Modelle
-                            # optional OPENROUTER_API_KEY für OpenRouter-Modelle
-npm run db:push             # SQLite-Schema anlegen
-npm run dev                 # http://localhost:3000
+cp .env.example .env        # OPENROUTER_API_KEY eintragen (https://openrouter.ai/keys)
+npm run dev:desktop         # Desktop-App im Dev-Modus (Vite + Tauri)
 ```
 
-Pflichtfeld ist `GEMINI_API_KEY`. Ist zusätzlich `OPENAI_API_KEY` oder `OPENROUTER_API_KEY`
-gesetzt, lässt sich das Modell pro Generierung umschalten. API-Keys nach Änderung der `.env`
-neu laden → Dev-Server neu starten.
+Die installierte App liest den Key aus der Umgebung **oder** aus `config.json` im
+App-Data-Verzeichnis (flaches JSON, gleiche Schlüssel wie `.env.example`):
+macOS `~/Library/Application Support/de.michelyweb.imagestylestudio/`,
+Linux `~/.local/share/de.michelyweb.imagestylestudio/`, Windows `%APPDATA%\de.michelyweb.imagestylestudio\`.
+
+**Datenübernahme aus der Web-App:** Beim ersten Start sucht die App eine bestehende
+`prisma/data/dev.db` + `data/images/` (im Arbeitsverzeichnis oder via `LEGACY_DATA_DIR`)
+und übernimmt sie automatisch ins App-Data-Verzeichnis. Die Übernahme läuft genau einmal
+(Marker-Datei `.legacy-migration-done`).
 
 ## Scripts
 
 | Script | Zweck |
 |---|---|
-| `npm run dev` | Dev-Server (Vite) |
-| `npm run build` / `npm run preview` | Produktions-Build / Vorschau |
-| `npm test` | Unit-Tests (Vitest) |
-| `npm run test:gen` | Einmaliger End-to-End-Gemini-Test (1 Bild, 1K) |
-| `npm run db:push` / `db:studio` | Schema sync / Prisma Studio |
+| `npm run dev:desktop` | Desktop-App im Dev-Modus (Hot-Reload) |
+| `npm run build:desktop` | Desktop-Bundles bauen (dmg/msi/AppImage/…) |
+| `npm run dev` | Nur das Frontend im Browser (ohne Backend-Funktionen) |
+| `npm run build` | Frontend-Produktions-Build (`dist/`) |
+| `npm test` | Frontend-Unit-Tests (Vitest) |
+| `cargo test` (in `src-tauri/`) | Rust-Unit-Tests (Prompt, Hashing, Storage, DB) |
+
+## Releases & Auto-Update
+
+Der GitHub-Workflow `.github/workflows/desktop-build.yml` baut bei einem `v*`-Tag
+Bundles für macOS (universal), Windows und Linux und legt einen Release-Draft an.
+**Code-Signing ist bewusst nicht konfiguriert** (Entscheidung 2026-06-11) — macOS/Windows
+zeigen beim ersten Start entsprechende Warnungen.
+
+Auto-Update läuft über den Tauri-Updater gegen `latest.json` des jeweils neuesten
+GitHub-Releases. Die Update-Artefakte werden mit dem **Updater-Keypair** signiert
+(unabhängig vom OS-Code-Signing): Secrets `TAURI_SIGNING_PRIVATE_KEY` (+ optional
+`_PASSWORD`) im Repo hinterlegen; der zugehörige Public Key steht in
+`src-tauri/tauri.conf.json`. Privater Schlüssel liegt lokal unter
+`~/.tauri/image-style-studio.key` — **nicht** einchecken, nicht verlieren.
 
 ## Architektur
 
-- **TanStack Start** (Vite + Router) + React + TypeScript. Server Functions (`src/server/*`)
-  halten den API-Key serverseitig.
-- **Prisma + SQLite** (`prisma/schema.prisma`) lokal. Für Team später: Provider auf
-  `postgresql` + passenden Driver-Adapter in `src/db.ts`; Modell ist vorbereitet.
-- **Provider-Abstraktion** (`src/lib/providers/`): Gemini (`gemini-3-pro-image` via
-  `@google/genai`), OpenAI (`gpt-image-1`/`gpt-image-2` via `openai`) und OpenRouter (kuratierte
-  Bildmodelle über den Chat-Completions-Endpoint mit `modalities:["image","text"]`) implementiert.
-  Sind mehrere API-Keys gesetzt, wählt man das Modell pro Generierung; Imagen o.Ä. später einsteckbar.
+```
+React 19 SPA (System-WebView)          Rust-Backend (src-tauri/)
+  TanStack Router · React Query          Tauri 2 Commands (~20)
+  src/ipc/*  ── invoke() ──────────▶     commands/  styles · generate · images · misc
+  (gleiche Signaturen wie früher         provider.rs  OpenRouter (Bild-Generierung)
+   die Server Functions)                 llm.rs       OpenRouter (Vision-Analyse, Brief)
+                                         db.rs        SQLite (rusqlite, Prisma-Schema)
+                                         storage.rs   Bilddateien im App-Data-Dir
+                                         prompt.rs    Prompt-Kompilierung
+                                         canonical.rs SHA-256 über kanonisches JSON
+```
+
+- **Frontend** (`src/`): unverändert React + TanStack Router als SPA. Alle Backend-Aufrufe
+  laufen über `src/ipc/*` — dünne Adapter mit denselben Signaturen wie die früheren
+  Server Functions, intern `invoke()` (Tauri IPC).
+- **Rust-Backend** (`src-tauri/src/`): portiert die komplette Server-Logik.
+  SQLite-Schema und DTO-Shapes (camelCase, ISO-Dates) sind 1:1 kompatibel zur Web-App —
+  eine migrierte `dev.db` funktioniert ohne Umbau.
+- **Provider**: nur **OpenRouter** (Chat-Completions, `modalities:["image","text"]`,
+  `image_config` für die Gemini-Familie, Kosten aus `usage.cost` mit Live-Preis-Fallback,
+  6 h gecacht). Stil-Analyse (Vision) und Style-Briefs laufen ebenfalls über OpenRouter
+  (Default `google/gemini-2.5-flash`, via `OPENROUTER_ANALYSIS_MODEL` /
+  `OPENROUTER_BRIEF_MODEL` änderbar). Legacy-Stile mit `provider: "gemini"` werden
+  transparent auf das OpenRouter-Pendant gemappt.
 - **Bildart-Registry** (`src/lib/kinds/`): jede Bildart (`foto`, `illustration`, `infografik`)
   bündelt ihr Zod-Schema, Formular-Gruppen, Default-Stil und Presets als `KindDef`. StyleEditor
-  und PresetPicker rendern generisch aus der aktiven Bildart. Das Foto-Schema
-  (`src/lib/schema/photoStyle.ts`) ist die Vorlage; `looseObject` → eigene JSON-Felder bleiben
-  erhalten.
-- **Prompt-Kompilierung** (`src/lib/prompt/compile.ts`): fixiertes Stil-JSON + `subject` →
-  Prompt; bei Ankern Stil-Transfer-Anweisung.
-- **Storage-Adapter** (`src/lib/storage/`): lokaler Filesystem-Adapter (`data/images`);
-  S3/Objekt-Storage später ohne Aufrufer-Umbau.
+  und PresetPicker rendern generisch aus der aktiven Bildart; `looseObject` → eigene
+  JSON-Felder bleiben erhalten.
+- **Prompt-Kompilierung**: in Rust (`prompt.rs`) für die Generierung, in TS
+  (`src/lib/prompt/compile.ts`) für die Live-Vorschau — beide erzeugen identischen Output
+  (Key-Reihenfolge inklusive; Rust nutzt `serde_json` mit `preserve_order`).
+- **Datenmodell** (SQLite): `Style`, `StyleVersion`, `Generation`, `Image`, `CameraBody` —
+  identisch zum früheren Prisma-Schema; Arrays/Objekte als JSON-Spalten.
 
 ### Konsistenz-Mechanik
-Gemini 3 Pro Image hat **keine Seeds**. Reine Prompts erreichen ~50–65 % Konsistenz.
+Die Bildmodelle haben **keine Seeds**. Reine Prompts erreichen ~50–65 % Konsistenz.
 Der stärkste Hebel sind **Stil-Anker** (Referenzbilder, bis 11): ein gespeicherter Stil pinnt
 optional Anker-Bilder, die bei jeder Produktion als Referenz mitgeschickt werden → ~80–95 %.
 
 ## Wichtige Implementierungs-Hinweise
 
-- **Prisma/Storage nur dynamisch importieren** (`await import('#/db')`) innerhalb von Server-
-  Function-Handlern. Statischer Top-Level-Import leakt Node-Code (`fileURLToPath`) ins
-  Client-Bundle und crasht im Browser.
-- **Server-Function-Rückgaben müssen serialisierbar sein** — keine `unknown`-Werte. Dafür
-  `JsonObject`/DTOs (`src/lib/types.ts`) statt `Record<string, unknown>`.
-- SQLite kennt keine Scalar-Arrays → Listen/Objekte liegen als `Json`-Spalten.
+- **Backend-Aufrufe nur über `src/ipc/*`** — Komponenten/Routen importieren nie `invoke`
+  direkt. Neue Backend-Funktion = Rust-Command + IPC-Adapter mit DTO-Typen.
+- **DTO-Kontrakt**: Rust-DTOs (`src-tauri/src/dto.rs`) spiegeln `src/lib/types.ts`
+  (camelCase via serde, Dates als ISO-Strings). Änderungen immer auf beiden Seiten.
+- **Prompt-/Hash-Parität**: `prompt.rs` ↔ `compile.ts` und `canonical.rs` ↔
+  `canonicalJson.ts` müssen identischen Output liefern (Tests vorhanden) — sonst brechen
+  Brief-Hashes und Prompt-Reproduzierbarkeit.
+- SQLite kennt keine Scalar-Arrays → Listen/Objekte liegen als JSON-Spalten (TEXT).
