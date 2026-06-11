@@ -30,23 +30,14 @@ wird in ein separates AUR-Repository:
 
 ## Bei jedem neuen App-Release aktualisieren
 
-Auf einem Arch-System (oder in einer Arch-Distrobox):
+**Automatisch:** Der CI-Job `update-aur-pkgbuild`
+(`.github/workflows/desktop-build.yml`) bumpt bei jedem `v*`-Tag nach
+erfolgreichem Build `pkgver` und `sha256sums` in PKGBUILD + .SRCINFO und
+committet das auf `main`. Manuell ist hier nichts zu tun.
 
-```bash
-cd image-style-studio-bin          # AUR-Checkout
-# pkgver in PKGBUILD anheben, pkgrel auf 1 zurücksetzen
-updpkgsums                         # lädt das neue .deb, setzt sha256
-makepkg --printsrcinfo > .SRCINFO
-makepkg -si                        # lokaler Testbau + Installation
-git commit -am "Update to X.Y.Z" && git push
-```
-
-Ohne Arch-System: sha256 manuell setzen
-(`curl -sL <deb-url> | sha256sum`) und `.SRCINFO` von Hand nachziehen
-(Felder `pkgver`, `source_x86_64`, `sha256sums_x86_64`).
-
-Die Kopie hier im Haupt-Repo (`packaging/aur/`) dient als versionierte
-Referenz — Änderungen zuerst hier pflegen, dann ins AUR-Repo spiegeln.
+Wer das Paket zusätzlich im AUR pflegt, spiegelt die aktualisierten Dateien
+von hier ins AUR-Repo (`git push` dorthin bleibt ein manueller Schritt).
+Lokaler Testbau auf einem Arch-System: `makepkg -si`.
 
 ## Hinweise
 

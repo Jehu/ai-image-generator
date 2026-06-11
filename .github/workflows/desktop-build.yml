@@ -82,3 +82,59 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  # Hält packaging/aur/ synchron zum Release: lädt das frische .deb aus dem
+  # (noch unveröffentlichten) Release-Draft, berechnet die SHA256 und bumpt
+  # PKGBUILD + .SRCINFO auf main. Kein AUR-Push — nur Repo-Pflege.
+  update-aur-pkgbuild:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Bump PKGBUILD and .SRCINFO
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          DEB_NAME="Image.Style.Studio_${VERSION}_amd64.deb"
+
+          # Release-Draft per API finden (Tag-Download geht bei Drafts nicht)
+          ASSET_ID=$(gh api "repos/${GITHUB_REPOSITORY}/releases" \
+            --jq ".[] | select(.tag_name==\"${GITHUB_REF_NAME}\") | .assets[] | select(.name==\"${DEB_NAME}\") | .id" | head -1)
+          if [ -z "$ASSET_ID" ]; then
+            echo "::error::Asset ${DEB_NAME} im Release ${GITHUB_REF_NAME} nicht gefunden"
+            exit 1
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/releases/assets/${ASSET_ID}" \
+            -H "Accept: application/octet-stream" > pkg.deb
+          SHA256=$(sha256sum pkg.deb | cut -d' ' -f1)
+          echo "Version ${VERSION}, SHA256 ${SHA256}"
+
+          sed -i \
+            -e "s|^pkgver=.*|pkgver=${VERSION}|" \
+            -e "s|^pkgrel=.*|pkgrel=1|" \
+            -e "s|^sha256sums_x86_64=.*|sha256sums_x86_64=('${SHA256}')|" \
+            packaging/aur/PKGBUILD
+          sed -i \
+            -e "s|pkgver = .*|pkgver = ${VERSION}|" \
+            -e "s|pkgrel = .*|pkgrel = 1|" \
+            -e "s|source_x86_64 = .*|source_x86_64 = image-style-studio-bin-${VERSION}.deb::https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/Image.Style.Studio_${VERSION}_amd64.deb|" \
+            -e "s|sha256sums_x86_64 = .*|sha256sums_x86_64 = ${SHA256}|" \
+            packaging/aur/.SRCINFO
+          rm pkg.deb
+
+          if git diff --quiet packaging/aur/; then
+            echo "PKGBUILD bereits aktuell — nichts zu tun"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packaging/aur/
+          git commit -m "Update AUR PKGBUILD to ${VERSION}"
+          git push origin main
