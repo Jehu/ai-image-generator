@@ -1,0 +1,88 @@
+// Image Style Studio — Datenmodell
+// Lokal: SQLite (kein DB-Server nötig). Für Team später: Provider auf "postgresql"
+// wechseln + passenden Driver-Adapter in src/db.ts; Modell ist darauf vorbereitet
+// (userId/orgId-Spalten später ergänzbar).
+//
+// SQLite kennt keine Scalar-Arrays. Listen (tags, anchorImageIds, ...) und
+// strukturierte Blöcke (styleJson, params, ...) werden als Json gespeichert.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Style {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  kind          String   @default("foto") // Bildart: foto | illustration | infografik
+  tags          Json // string[]
+  styleJson     Json // fixierter Parameter-Block (ohne subject)
+  styleBrief      String? // LLM-generierter Markdown-Style-Brief (Prosa, synchron zu styleJson)
+  briefSourceHash String? // SHA-256 des kanonischen styleJson — Brief nur bei echter Änderung neu generieren
+  schemaVersion Int      @default(1)
+  version       Int      @default(1) // Prompt-Versionierung des Stils
+  provider      String   @default("gemini")
+  modelId       String   @default("gemini-3-pro-image")
+  defaultParams Json // aspectRatio, imageSize, thinkingLevel, anzahl ...
+  anchorImageIds Json // string[] — Style-Anker (Referenzbilder)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  versions    StyleVersion[]
+  generations Generation[]
+}
+
+model StyleVersion {
+  id        String   @id @default(cuid())
+  styleId   String
+  version   Int
+  styleJson Json
+  createdAt DateTime @default(now())
+
+  style Style @relation(fields: [styleId], references: [id], onDelete: Cascade)
+
+  @@unique([styleId, version])
+}
+
+model Generation {
+  id                String   @id @default(cuid())
+  styleId           String?
+  subject           String
+  compiledPrompt    Json // exakt das, was an die API ging (style + subject)
+  provider          String   @default("gemini")
+  modelId           String
+  params            Json
+  referenceImageIds Json // string[]
+  outputImageId     String?
+  status            String   @default("pending") // pending | done | error
+  errorMessage      String?
+  costUsd           Float?
+  createdAt         DateTime @default(now())
+
+  style  Style?  @relation(fields: [styleId], references: [id], onDelete: SetNull)
+  images Image[]
+}
+
+model CameraBody {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Image {
+  id           String   @id @default(cuid())
+  kind         String // output | anchor | upload | reference
+  path         String // via Storage-Adapter aufgelöst
+  mime         String   @default("image/png")
+  width        Int?
+  height       Int?
+  generationId String?
+  createdAt    DateTime @default(now())
+
+  generation Generation? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+}

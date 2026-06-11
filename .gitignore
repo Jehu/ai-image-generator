@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+
+# Build-Ausgaben
+dist
+dist-ssr
+.output
+.nitro
+.vinxi
+.wrangler
+
+# TanStack / Vite Caches
+.tanstack
+__unconfig*
+
+# Generierte Artefakte (reproduzierbar via npm-Skripte)
+# src/generated = Prisma Client (npm run db:generate)
+src/generated
+
+# Lokale Daten (nicht versionieren)
+# data = gespeicherte Bilder (Storage-Adapter), prisma/data = lokale SQLite-DB
+data
+prisma/data
+todos.json
+
+# Secrets / Umgebung — .env.example bleibt versioniert
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage / Tests
+coverage
+
+# OS / Editor
+.DS_Store
