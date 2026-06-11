@@ -26,7 +26,7 @@ Alle `.ts`-Dateien hier. Die Rust-Gegenstücke leben in `src-tauri/src/commands/
 | `styleBrief.ts` | compile_style_brief |
 | `cameras.ts` | list/add/delete_camera_body |
 | `models.ts` | list_available_models |
-| `settings.ts` | get_settings_info |
+| `settings.ts` | get_settings_info, save_settings (API-Key → config.json) |
 
 ## Verification
 

@@ -20,7 +20,8 @@ async fn generate_brief_fields(
     style_json: &Value,
     kind: &str,
 ) -> (Option<String>, Option<String>) {
-    match build_style_brief(&state.http, &state.config, style_json, Some(kind)).await {
+    let config = state.config();
+    match build_style_brief(&state.http, &config, style_json, Some(kind)).await {
         Ok(brief) => {
             let hash = hash_style_json(style_json);
             (

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getSettingsInfo } from '#/ipc/settings'
+import { getSettingsInfo, saveSettings } from '#/ipc/settings'
 import {
   addCameraBody,
   deleteCameraBody,
@@ -25,41 +25,9 @@ function Settings() {
         <p className="text-muted-foreground text-sm">Lade…</p>
       ) : (
         <div className="flex flex-col gap-4">
-          <Row label="Gemini API-Key">
-            {data.hasApiKey ? (
-              <span className="text-green-600">
-                gesetzt — {data.apiKeyMasked}
-              </span>
-            ) : (
-              <span className="text-red-600">
-                nicht gesetzt — in <code>.env</code> eintragen (
-                <code>GEMINI_API_KEY</code>)
-              </span>
-            )}
-          </Row>
-          <Row label="OpenAI API-Key">
-            {data.hasOpenAiKey ? (
-              <span className="text-green-600">
-                gesetzt — {data.openAiKeyMasked}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">
-                nicht gesetzt (optional) — in <code>.env</code> eintragen (
-                <code>OPENAI_API_KEY</code>) für OpenAI-Bildmodelle
-              </span>
-            )}
-          </Row>
-          <Row label="OpenRouter API-Key">
-            {data.hasOpenRouterKey ? (
-              <span className="text-green-600">
-                gesetzt — {data.openRouterKeyMasked}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">
-                nicht gesetzt (optional) — in <code>.env</code> eintragen (
-                <code>OPENROUTER_API_KEY</code>) für OpenRouter-Bildmodelle
-              </span>
-            )}
+          <ApiKeySection settings={data} />
+          <Row label="Konfiguration">
+            <code>{data.configPath}</code>
           </Row>
           <Row label="Bild-Speicher">
             <code>{data.imageDir}</code>
@@ -67,17 +35,108 @@ function Settings() {
           <Row label="Datenbank">
             <code>{data.databaseUrl}</code>
           </Row>
-          <p className="text-muted-foreground mt-2 text-xs">
-            Der API-Key wird ausschließlich serverseitig (Server Functions)
-            genutzt und gelangt nie ins Frontend-Bundle. Änderungen am Key
-            erfolgen in der <code>.env</code>-Datei; danach den Dev-Server neu
-            starten.
-          </p>
         </div>
       )}
 
       <CameraBodiesSection />
     </div>
+  )
+}
+
+function ApiKeySection({
+  settings,
+}: {
+  settings: {
+    hasOpenRouterKey: boolean
+    openRouterKeyMasked: string | null
+    openRouterKeySource: 'env' | 'config' | null
+  }
+}) {
+  const queryClient = useQueryClient()
+  const [key, setKey] = useState('')
+
+  // Env-Variable überschreibt den gespeicherten Key — Eingabe wäre wirkungslos.
+  const envOverride = settings.openRouterKeySource === 'env'
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ['settings'] })
+    queryClient.invalidateQueries({ queryKey: ['availableModels'] })
+  }
+
+  const save = useMutation({
+    mutationFn: (k: string) => saveSettings({ data: { openrouterApiKey: k } }),
+    onSuccess: () => {
+      setKey('')
+      invalidate()
+    },
+  })
+
+  return (
+    <section className="rounded-md border p-4">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-sm font-semibold">OpenRouter API-Key</h2>
+        {settings.hasOpenRouterKey ? (
+          <span className="text-sm text-green-600">
+            gesetzt — {settings.openRouterKeyMasked}
+            {envOverride && ' (aus Umgebungsvariable)'}
+          </span>
+        ) : (
+          <span className="text-sm text-red-600">
+            nicht gesetzt — ohne Key sind keine Generierungen möglich
+          </span>
+        )}
+      </div>
+
+      {envOverride ? (
+        <p className="text-muted-foreground mt-2 text-xs">
+          Der Key kommt aus der Umgebungsvariable{' '}
+          <code>OPENROUTER_API_KEY</code> und hat Vorrang — solange sie gesetzt
+          ist, sind Änderungen hier wirkungslos.
+        </p>
+      ) : (
+        <>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && key.trim()) save.mutate(key)
+              }}
+              placeholder="sk-or-v1-… (https://openrouter.ai/keys)"
+              autoComplete="off"
+              className="flex-1 rounded-md border bg-background p-2 text-sm"
+            />
+            <button
+              onClick={() => save.mutate(key)}
+              disabled={save.isPending || key.trim() === ''}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              Speichern
+            </button>
+            {settings.hasOpenRouterKey && (
+              <button
+                onClick={() => save.mutate('')}
+                disabled={save.isPending}
+                title="Gespeicherten Key entfernen"
+                className="rounded-md border px-4 py-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                Entfernen
+              </button>
+            )}
+          </div>
+          {save.isError && (
+            <p className="mt-1 text-sm text-red-600">{save.error.message}</p>
+          )}
+          <p className="text-muted-foreground mt-2 text-xs">
+            Der Key wird lokal in der Konfigurationsdatei der App gespeichert
+            (nur für deinen Benutzer lesbar) und ausschließlich vom Rust-Backend
+            verwendet — er gelangt nie ins Frontend-Bundle und verlässt das
+            Gerät nur Richtung OpenRouter.
+          </p>
+        </>
+      )}
+    </section>
   )
 }
 

@@ -100,9 +100,9 @@ Schema in `src-tauri/src/db.rs` (`migrate()`, idempotent). Beim ersten Start üb
 
 `#/*` → `./src/*` (in `package.json` `imports` und `tsconfig.json` konfiguriert). Immer `#/` statt relativer Pfade verwenden.
 
-## Umgebungsvariablen
+## Konfiguration / API-Key
 
-Siehe `.env.example`. Pflichtfeld: `OPENROUTER_API_KEY` (https://openrouter.ai/keys) — im Dev-Modus via `.env`, in der installierten App via Env oder `config.json` im App-Data-Verzeichnis. Nach Änderungen Dev-Modus neu starten.
+Der `OPENROUTER_API_KEY` (https://openrouter.ai/keys) wird normalerweise **über die Einstellungen-UI** gesetzt → `save_settings`-Command schreibt `config.json` (App-Data-Dir, 0600) und lädt die Config zur Laufzeit neu (`AppState::reload_config`). Env-Variablen (`.env` im Dev-Modus) haben **Vorrang** vor config.json; `get_settings_info` meldet die wirksame Quelle (`openRouterKeySource: 'env' | 'config' | null`), die UI sperrt die Eingabe bei Env-Override. Weitere Variablen: siehe `.env.example`.
 
 ## Releases
 

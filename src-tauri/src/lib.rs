@@ -40,13 +40,7 @@ pub fn run() {
             let conn = db::open(&paths.db_path)
                 .map_err(|e| format!("Datenbank konnte nicht geöffnet werden: {e}"))?;
 
-            app.manage(AppState {
-                config,
-                paths,
-                db: std::sync::Mutex::new(conn),
-                http: reqwest::Client::new(),
-                price_cache: tokio::sync::Mutex::new(None),
-            });
+            app.manage(AppState::new(config, paths, conn, reqwest::Client::new()));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -74,6 +68,7 @@ pub fn run() {
             commands::misc::delete_camera_body,
             commands::misc::list_available_models,
             commands::misc::get_settings_info,
+            commands::misc::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("Fehler beim Starten der Tauri-App");

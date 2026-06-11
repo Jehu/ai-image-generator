@@ -217,12 +217,12 @@ pub struct AvailableModel {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SettingsInfo {
-    pub has_api_key: bool,
-    pub api_key_masked: Option<String>,
-    pub has_open_ai_key: bool,
-    pub open_ai_key_masked: Option<String>,
     pub has_open_router_key: bool,
     pub open_router_key_masked: Option<String>,
+    /// Herkunft des wirksamen Keys: "env" (Vorrang, UI-Änderung wirkungslos)
+    /// oder "config" (über die Einstellungen-UI gespeichert); None = kein Key.
+    pub open_router_key_source: Option<String>,
+    pub config_path: String,
     pub image_dir: String,
     pub database_url: String,
 }

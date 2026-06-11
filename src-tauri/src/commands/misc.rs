@@ -3,6 +3,7 @@
 use serde::Deserialize;
 use tauri::State;
 
+use crate::config::{config_file_path, update_config_file, ConfigSource};
 use crate::db::now_iso;
 use crate::dto::{
     AnalyzeStyleInput, AnalyzeStyleOutput, AvailableModel, CompileStyleBriefInput,
@@ -28,9 +29,10 @@ pub async fn analyze_style_from_image(
             "mimeType muss ein Bild-MIME-Typ sein (image/...).",
         ));
     }
+    let config = state.config();
     let style_json = llm::analyze_style(
         &state.http,
-        &state.config,
+        &config,
         &input.image_base64,
         &input.mime_type,
     )
@@ -48,9 +50,10 @@ pub async fn compile_style_brief(
     if !input.style_json.is_object() {
         return Err(AppError::msg("styleJson muss ein Objekt sein."));
     }
+    let config = state.config();
     let brief = llm::build_style_brief(
         &state.http,
-        &state.config,
+        &config,
         &input.style_json,
         input.kind.as_deref(),
     )
@@ -116,7 +119,7 @@ pub async fn list_available_models(
     state: State<'_, AppState>,
 ) -> AppResult<Vec<AvailableModel>> {
     let mut out = Vec::new();
-    if state.config.openrouter_api_key().is_some() {
+    if state.config().openrouter_api_key().is_some() {
         for m in OPENROUTER_MODELS {
             out.push(AvailableModel {
                 provider_id: "openrouter".to_string(),
@@ -142,19 +145,49 @@ fn mask_key(key: &str) -> Option<String> {
     Some(format!("{head}…{tail} ({n} Zeichen)"))
 }
 
-#[tauri::command]
-pub async fn get_settings_info(state: State<'_, AppState>) -> AppResult<SettingsInfo> {
-    let gemini = state.config.get("GEMINI_API_KEY").unwrap_or("");
-    let openai = state.config.get("OPENAI_API_KEY").unwrap_or("");
-    let openrouter = state.config.get("OPENROUTER_API_KEY").unwrap_or("");
-    Ok(SettingsInfo {
-        has_api_key: !gemini.trim().is_empty(),
-        api_key_masked: mask_key(gemini),
-        has_open_ai_key: !openai.trim().is_empty(),
-        open_ai_key_masked: mask_key(openai),
+fn settings_info(state: &AppState) -> SettingsInfo {
+    let config = state.config();
+    let openrouter = config.get("OPENROUTER_API_KEY").unwrap_or("");
+    SettingsInfo {
         has_open_router_key: !openrouter.trim().is_empty(),
         open_router_key_masked: mask_key(openrouter),
+        open_router_key_source: config.source("OPENROUTER_API_KEY").map(|s| {
+            match s {
+                ConfigSource::Env => "env".to_string(),
+                ConfigSource::ConfigFile => "config".to_string(),
+            }
+        }),
+        config_path: config_file_path(&state.paths.app_data_dir)
+            .display()
+            .to_string(),
         image_dir: state.paths.image_dir.display().to_string(),
         database_url: state.paths.db_path.display().to_string(),
-    })
+    }
+}
+
+#[tauri::command]
+pub async fn get_settings_info(state: State<'_, AppState>) -> AppResult<SettingsInfo> {
+    Ok(settings_info(&state))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveSettingsInput {
+    /// Neuer OpenRouter-API-Key; leerer String entfernt den gespeicherten Key.
+    pub openrouter_api_key: String,
+}
+
+/// Speichert den API-Key in config.json (App-Data-Verzeichnis) und lädt die
+/// Konfiguration neu. Eine gesetzte Env-Variable behält Vorrang — die UI
+/// zeigt das über `openRouterKeySource: "env"` an.
+#[tauri::command]
+pub async fn save_settings(
+    state: State<'_, AppState>,
+    input: SaveSettingsInput,
+) -> AppResult<SettingsInfo> {
+    let key = input.openrouter_api_key.trim().to_string();
+    let value = if key.is_empty() { None } else { Some(key) };
+    update_config_file(&state.paths.app_data_dir, &[("OPENROUTER_API_KEY", value)])?;
+    state.reload_config();
+    Ok(settings_info(&state))
 }

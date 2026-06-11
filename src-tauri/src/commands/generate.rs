@@ -75,9 +75,10 @@ pub async fn generate_image(
         count: Some(input.params.as_ref().and_then(|p| p.count).unwrap_or(1)),
     };
 
+    let config = state.config();
     let result = provider::generate(
         &state.http,
-        &state.config,
+        &config,
         &state.price_cache,
         &model_id,
         &compiled.prompt_text,

@@ -67,9 +67,10 @@ Bild den Prompt neu zu tüfteln.
 - Eine **Social-Media-Serie** mit wiedererkennbarer Ästhetik.
 - Einen **Marken- oder Kunden-Look** schnell treffen — per „Stil aus Bild ableiten".
 
-> Hinweis: Du brauchst einen eigenen **OpenRouter-API-Key** (https://openrouter.ai/keys).
-> Generierungen laufen über deinen Account und verursachen die jeweiligen Anbieterkosten; die
-> Kosten pro Lauf werden angezeigt (bevorzugt aus `usage.cost` der API-Antwort).
+> Hinweis: Du brauchst einen eigenen **OpenRouter-API-Key** (https://openrouter.ai/keys) —
+> einfach in den **Einstellungen** der App eintragen. Generierungen laufen über deinen Account
+> und verursachen die jeweiligen Anbieterkosten; die Kosten pro Lauf werden angezeigt
+> (bevorzugt aus `usage.cost` der API-Antwort).
 
 ## Setup (Entwicklung)
 
@@ -78,14 +79,18 @@ Voraussetzungen: Node 22+, Rust (stable), plattformübliche
 
 ```bash
 npm install
-cp .env.example .env        # OPENROUTER_API_KEY eintragen (https://openrouter.ai/keys)
 npm run dev:desktop         # Desktop-App im Dev-Modus (Vite + Tauri)
 ```
 
-Die installierte App liest den Key aus der Umgebung **oder** aus `config.json` im
-App-Data-Verzeichnis (flaches JSON, gleiche Schlüssel wie `.env.example`):
+**API-Key:** Den OpenRouter-Key trägst du direkt in der App unter **Einstellungen** ein —
+er wird in `config.json` im App-Data-Verzeichnis gespeichert (Dateirechte 0600, nur das
+Rust-Backend liest ihn) und ist nie Teil der Anwendung:
 macOS `~/Library/Application Support/de.michelyweb.imagestylestudio/`,
 Linux `~/.local/share/de.michelyweb.imagestylestudio/`, Windows `%APPDATA%\de.michelyweb.imagestylestudio\`.
+
+Alternativ (z. B. für Entwicklung/CI) per Umgebungsvariable: `cp .env.example .env` und
+`OPENROUTER_API_KEY` setzen. **Eine gesetzte Env-Variable hat Vorrang** vor dem in der UI
+gespeicherten Key; die Einstellungen-Seite zeigt die wirksame Quelle an.
 
 **Datenübernahme aus der Web-App:** Beim ersten Start sucht die App eine bestehende
 `prisma/data/dev.db` + `data/images/` (im Arbeitsverzeichnis oder via `LEGACY_DATA_DIR`)
