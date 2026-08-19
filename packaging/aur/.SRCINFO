@@ -1,6 +1,6 @@
 pkgbase = image-style-studio-bin
 	pkgdesc = Reproduzierbare Bildstile für KI-Bildgenerierung finden, fixieren und konsistent anwenden (Tauri-Desktop-App, OpenRouter)
-	pkgver = 0.1.2
+	pkgver = 0.2.0
 	pkgrel = 1
 	url = https://github.com/Jehu/ai-image-generator
 	arch = x86_64
@@ -16,7 +16,7 @@ pkgbase = image-style-studio-bin
 	provides = image-style-studio
 	conflicts = image-style-studio
 	options = !strip
-	source_x86_64 = image-style-studio-bin-0.1.2.deb::https://github.com/Jehu/ai-image-generator/releases/download/v0.1.2/Image.Style.Studio_0.1.2_amd64.deb
-	sha256sums_x86_64 = d8625d20b2b5811d1a35eb56392de0c80a4a9bf978da679bcd5a3ee62e9c1748
+	source_x86_64 = image-style-studio-bin-0.2.0.deb::https://github.com/Jehu/ai-image-generator/releases/download/v0.2.0/Image.Style.Studio_0.2.0_amd64.deb
+	sha256sums_x86_64 = 9377699fd6b00da2018e33947ebde57645fbe40fb49862c625b18b4a133c3cc0
 
 pkgname = image-style-studio-bin
