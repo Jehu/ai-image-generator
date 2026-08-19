@@ -2,7 +2,7 @@
 // zu genau dem Prompt-Text, der an die Bild-API geht. Bei vorhandenen
 // Referenzbildern wird eine Stil-Transfer-Anweisung vorangestellt.
 
-import type { JsonObject } from '#/lib/json'
+import type { JsonObject, JsonValue } from '#/lib/json'
 import type { ImageKind } from '#/lib/kinds/types'
 
 export interface CompileInput {
@@ -19,7 +19,7 @@ export interface CompileInput {
 export interface CompileOutput {
   /** strukturiertes Prompt-Objekt (für Speicherung/Reproduzierbarkeit) */
   promptObject: JsonObject
-  /** serialisierter Prompt-Text (geht als text-Part an die API) */
+  /** serialisierter Prompt für Anzeige, Kopieren und reproduzierbare Historie */
   promptText: string
 }
 
@@ -47,6 +47,66 @@ export function compilePrompt(input: CompileInput): CompileOutput {
     promptObject,
     promptText: JSON.stringify(promptObject, null, 2),
   }
+}
+
+/** Rendert den kanonischen Prompt für Bildmodelle ohne zuverlässige JSON-Prompt-Unterstützung. */
+export function renderPromptAsText(promptObject: JsonObject): string {
+  const subject =
+    typeof promptObject.subject === 'string' ? promptObject.subject : 'the requested subject'
+  const requirements = Object.entries(promptObject).filter(
+    ([key, value]) => key !== 'subject' && value !== null,
+  )
+  let text = `Create an image of ${subject}.`
+
+  if (requirements.length > 0) {
+    text += '\n\nStyle requirements:\n'
+    for (const [key, value] of requirements) {
+      text = renderRequirement(text, key, value, 0)
+    }
+    text = text.trimEnd()
+  }
+
+  return text
+}
+
+function renderRequirement(text: string, key: string, value: JsonValue, indent: number): string {
+  const prefix = `${' '.repeat(indent)}- ${humanLabel(key)}`
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return `${text}${prefix}: ${value}\n`
+  }
+  if (Array.isArray(value)) {
+    text += `${prefix}:\n`
+    for (const item of value) {
+      if (item === null) continue
+      if (typeof item === 'object' && !Array.isArray(item)) {
+        text += `${' '.repeat(indent + 2)}-\n`
+        for (const [nestedKey, nestedValue] of Object.entries(item)) {
+          if (nestedValue !== null) {
+            text = renderRequirement(text, nestedKey, nestedValue, indent + 4)
+          }
+        }
+      } else if (Array.isArray(item)) {
+        text = renderRequirement(text, 'item', item, indent + 2)
+      } else {
+        text += `${' '.repeat(indent + 2)}- ${item}\n`
+      }
+    }
+    return text
+  }
+  if (value === null) return text
+
+  text += `${prefix}:\n`
+  for (const [nestedKey, nestedValue] of Object.entries(value)) {
+    if (nestedValue !== null) {
+      text = renderRequirement(text, nestedKey, nestedValue, indent + 2)
+    }
+  }
+  return text
+}
+
+function humanLabel(key: string): string {
+  const label = key.replaceAll('_', ' ')
+  return label === '' ? label : `${label[0].toUpperCase()}${label.slice(1)}`
 }
 
 /** Einleitende Anweisung, die dem kopierten JSON-Prompt vorangestellt wird. */

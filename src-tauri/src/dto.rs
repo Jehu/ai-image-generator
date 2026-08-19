@@ -209,6 +209,7 @@ pub struct AvailableModel {
     pub provider_id: String,
     pub model_id: String,
     pub label: String,
+    pub supports_style_references: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -219,9 +220,32 @@ pub struct SettingsInfo {
     /// Herkunft des wirksamen Keys: "env" (Vorrang, UI-Änderung wirkungslos)
     /// oder "config" (über die Einstellungen-UI gespeichert); None = kein Key.
     pub open_router_key_source: Option<String>,
+    pub has_venice_key: bool,
+    pub venice_key_masked: Option<String>,
+    pub venice_key_source: Option<String>,
     pub config_path: String,
     pub image_dir: String,
     pub database_url: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serializes_style_reference_capability_in_camel_case() {
+        let model = AvailableModel {
+            provider_id: "venice".to_string(),
+            model_id: "krea-v2".to_string(),
+            label: "Krea v2".to_string(),
+            supports_style_references: true,
+        };
+
+        assert_eq!(
+            serde_json::to_value(model).unwrap()["supportsStyleReferences"],
+            true
+        );
+    }
 }
 
 /// Coerce beliebiger Strings auf eine gültige ImageKind (Fallback: foto) —

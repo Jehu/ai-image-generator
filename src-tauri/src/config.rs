@@ -10,6 +10,7 @@ const ENV_KEYS: &[&str] = &[
     "GEMINI_API_KEY",
     "OPENAI_API_KEY",
     "OPENROUTER_API_KEY",
+    "VENICE_API_KEY",
     "OPENROUTER_HTTP_REFERER",
     "OPENROUTER_APP_TITLE",
     "OPENROUTER_ANALYSIS_MODEL",
@@ -93,7 +94,12 @@ impl Config {
     }
 
     pub fn openrouter_api_key(&self) -> Option<&str> {
-        self.get("OPENROUTER_API_KEY").filter(|s| !s.trim().is_empty())
+        self.get("OPENROUTER_API_KEY")
+            .filter(|s| !s.trim().is_empty())
+    }
+
+    pub fn venice_api_key(&self) -> Option<&str> {
+        self.get("VENICE_API_KEY").filter(|s| !s.trim().is_empty())
     }
 
     /// Vision-Modell für die Stil-Analyse (über OpenRouter).
@@ -198,8 +204,7 @@ mod tests {
     #[test]
     fn update_sets_and_removes_values() {
         let dir = temp_dir();
-        update_config_file(&dir, &[("OPENROUTER_API_KEY", Some("sk-test".into()))])
-            .unwrap();
+        update_config_file(&dir, &[("OPENROUTER_API_KEY", Some("sk-test".into()))]).unwrap();
         let raw = std::fs::read_to_string(config_file_path(&dir)).unwrap();
         assert!(raw.contains("sk-test"));
 
@@ -216,8 +221,11 @@ mod tests {
     #[test]
     fn file_value_is_used_and_reported() {
         let dir = temp_dir();
-        update_config_file(&dir, &[("OPENROUTER_APP_TITLE", Some("Mein Studio".into()))])
-            .unwrap();
+        update_config_file(
+            &dir,
+            &[("OPENROUTER_APP_TITLE", Some("Mein Studio".into()))],
+        )
+        .unwrap();
         let config = Config::load(&dir);
         assert_eq!(config.get("OPENROUTER_APP_TITLE"), Some("Mein Studio"));
         assert_eq!(
