@@ -33,7 +33,12 @@ const ASPECT_RATIOS: Array<AspectRatio> = [
   '21:9',
 ]
 const IMAGE_SIZES: Array<ImageSize> = ['1K', '2K', '4K']
-const THINKING_LEVELS: Array<ThinkingLevelOpt> = ['minimal', 'low', 'medium', 'high']
+const THINKING_LEVELS: Array<ThinkingLevelOpt> = [
+  'minimal',
+  'low',
+  'medium',
+  'high',
+]
 
 function Playground() {
   const [kind, setKind] = useState<ImageKind>('foto')
@@ -46,12 +51,15 @@ function Playground() {
   const [count, setCount] = useState(2)
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevelOpt>('high')
   const [provider, setProvider] = useState('openrouter')
-  const [modelId, setModelId] = useState('google/gemini-3-pro-image-preview')
+  const [modelId, setModelId] = useState('')
+  const [modelAvailable, setModelAvailable] = useState(true)
   const [saveOpen, setSaveOpen] = useState(false)
   const analyzeFileRef = useRef<HTMLInputElement>(null)
   // Feedback nach "Stil aus Bild ableiten": Ring-Flash am Editor + Banner.
   const [flashing, setFlashing] = useState(false)
-  const [analysisDone, setAnalysisDone] = useState<{ fields: number } | null>(null)
+  const [analysisDone, setAnalysisDone] = useState<{ fields: number } | null>(
+    null,
+  )
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const mutation = useMutation({
@@ -139,8 +147,10 @@ function Playground() {
             kind={kind}
             onApply={(preset) => {
               setStyle(preset.styleJson)
-              if (preset.params?.aspectRatio) setAspectRatio(preset.params.aspectRatio)
-              if (preset.params?.imageSize) setImageSize(preset.params.imageSize)
+              if (preset.params?.aspectRatio)
+                setAspectRatio(preset.params.aspectRatio)
+              if (preset.params?.imageSize)
+                setImageSize(preset.params.imageSize)
               if (preset.params?.thinkingLevel)
                 setThinkingLevel(preset.params.thinkingLevel)
             }}
@@ -148,60 +158,62 @@ function Playground() {
 
           {/* Stil aus Bild ableiten — nur Foto (Analyse liefert ein Foto-Schema). */}
           {kind === 'foto' && (
-          <>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <input
-                ref={analyzeFileRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) analyze.mutate(file)
-                  e.target.value = ''
-                }}
-              />
-              <button
-                onClick={() => analyzeFileRef.current?.click()}
-                disabled={analyze.isPending}
-                className="rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50"
-                title="Fotografischen Stil aus einem Bild ableiten"
-              >
-                {analyze.isPending ? 'Analysiere Bild…' : 'Stil aus Bild ableiten'}
-              </button>
-            </div>
-            <p className="text-muted-foreground text-xs">
-              Analyse kostet Tokens (Bild-Input + JSON-Output) — grob wenige Cents
-              pro Analyse.
-            </p>
-            {analyze.isError && (
-              <p className="text-sm text-red-600">
-                Fehler: {(analyze.error).message}
-              </p>
-            )}
-            {analyze.data && analyze.data.warnings.length > 0 && (
-              <p className="text-xs text-amber-600">
-                {analyze.data.warnings.length} Feld(er) evtl. nachzubessern.
-              </p>
-            )}
-          </div>
+            <>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={analyzeFileRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) analyze.mutate(file)
+                      e.target.value = ''
+                    }}
+                  />
+                  <button
+                    onClick={() => analyzeFileRef.current?.click()}
+                    disabled={analyze.isPending}
+                    className="rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50"
+                    title="Fotografischen Stil aus einem Bild ableiten"
+                  >
+                    {analyze.isPending
+                      ? 'Analysiere Bild…'
+                      : 'Stil aus Bild ableiten'}
+                  </button>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Analyse kostet Tokens (Bild-Input + JSON-Output) — grob wenige
+                  Cents pro Analyse.
+                </p>
+                {analyze.isError && (
+                  <p className="text-sm text-red-600">
+                    Fehler: {analyze.error.message}
+                  </p>
+                )}
+                {analyze.data && analyze.data.warnings.length > 0 && (
+                  <p className="text-xs text-amber-600">
+                    {analyze.data.warnings.length} Feld(er) evtl. nachzubessern.
+                  </p>
+                )}
+              </div>
 
-          {analysisDone && (
-            <div
-              role="status"
-              className="rise-in flex items-center gap-2 rounded-md border border-green-600/30 bg-green-600/10 px-3 py-2 text-sm text-green-700 dark:text-green-400"
-            >
-              <span aria-hidden className="text-base leading-none">
-                ✓
-              </span>
-              <span>
-                Stil aus Bild übernommen — {analysisDone.fields} Stil-Bereich(e)
-                ins Formular geladen.
-              </span>
-            </div>
-          )}
-          </>
+              {analysisDone && (
+                <div
+                  role="status"
+                  className="rise-in flex items-center gap-2 rounded-md border border-green-600/30 bg-green-600/10 px-3 py-2 text-sm text-green-700 dark:text-green-400"
+                >
+                  <span aria-hidden className="text-base leading-none">
+                    ✓
+                  </span>
+                  <span>
+                    Stil aus Bild übernommen — {analysisDone.fields}{' '}
+                    Stil-Bereich(e) ins Formular geladen.
+                  </span>
+                </div>
+              )}
+            </>
           )}
 
           <div
@@ -212,7 +224,9 @@ function Playground() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Motiv (subject)</label>
+            <label className="mb-1 block text-sm font-medium">
+              Motiv (subject)
+            </label>
             <textarea
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -227,6 +241,7 @@ function Playground() {
               setProvider(p)
               setModelId(m)
             }}
+            onAvailabilityChange={setModelAvailable}
           />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -272,7 +287,9 @@ function Playground() {
             <Field label="Thinking">
               <select
                 value={thinkingLevel}
-                onChange={(e) => setThinkingLevel(e.target.value as ThinkingLevelOpt)}
+                onChange={(e) =>
+                  setThinkingLevel(e.target.value as ThinkingLevelOpt)
+                }
                 className="w-full rounded-md border bg-background p-2 text-sm"
               >
                 {THINKING_LEVELS.map((t) => (
@@ -289,7 +306,9 @@ function Playground() {
           <div className="flex gap-2">
             <button
               onClick={handleGenerate}
-              disabled={mutation.isPending || subject.trim() === ''}
+              disabled={
+                mutation.isPending || subject.trim() === '' || !modelAvailable
+              }
               className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
               {mutation.isPending ? 'Generiere…' : 'Bilder generieren'}
@@ -305,7 +324,7 @@ function Playground() {
 
           {mutation.isError && (
             <p className="text-sm text-red-600">
-              Fehler: {(mutation.error).message}
+              Fehler: {mutation.error.message}
             </p>
           )}
         </div>

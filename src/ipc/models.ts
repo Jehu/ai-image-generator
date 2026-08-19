@@ -5,7 +5,6 @@ export interface AvailableModel {
   providerId: string
   modelId: string
   label: string
-  supportsReferences: boolean
 }
 
 export async function listAvailableModels(): Promise<Array<AvailableModel>> {

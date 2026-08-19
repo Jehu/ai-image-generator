@@ -80,6 +80,7 @@ pub async fn generate_image(
         &state.http,
         &config,
         &state.price_cache,
+        &state.image_model_cache,
         &model_id,
         &compiled.prompt_text,
         &references,

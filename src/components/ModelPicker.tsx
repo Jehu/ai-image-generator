@@ -11,30 +11,32 @@ export function ModelPicker({
   provider,
   modelId,
   onChange,
+  onAvailabilityChange,
 }: {
   provider: string
   modelId: string
   onChange: (provider: string, modelId: string) => void
+  onAvailabilityChange?: (available: boolean) => void
 }) {
   const { data: models = [] } = useQuery({
     queryKey: ['availableModels'],
     queryFn: () => listAvailableModels(),
   })
-
-  // Auf das erste verfügbare Modell zurückfallen, wenn die aktuelle Auswahl
-  // nicht (mehr) verfügbar ist — z.B. ein Stil mit gespeichertem OpenAI-Modell,
-  // dessen Key fehlt.
-  useEffect(() => {
-    if (models.length === 0) return
-    const exists = models.some(
-      (m) => m.providerId === provider && m.modelId === modelId,
+  const selectedUnavailable =
+    models.length > 0 &&
+    !models.some(
+      (model) => model.providerId === provider && model.modelId === modelId,
     )
-    if (!exists) {
+  useEffect(() => {
+    if (!modelId && models.length > 0) {
       onChange(models[0].providerId, models[0].modelId)
     }
-  }, [models, provider, modelId, onChange])
+  }, [modelId, models, onChange])
+  useEffect(() => {
+    onAvailabilityChange?.(!selectedUnavailable)
+  }, [onAvailabilityChange, selectedUnavailable])
 
-  if (models.length <= 1) return null
+  if (models.length <= 1 && !selectedUnavailable) return null
 
   const value = `${provider}:${modelId}`
 
@@ -49,6 +51,11 @@ export function ModelPicker({
         }}
         className="w-full rounded-md border bg-background p-2 text-sm"
       >
+        {selectedUnavailable && (
+          <option value={value}>
+            Aktuelles Modell nicht mehr verfügbar: {modelId}
+          </option>
+        )}
         {models.map((m) => (
           <option
             key={`${m.providerId}:${m.modelId}`}
@@ -58,6 +65,11 @@ export function ModelPicker({
           </option>
         ))}
       </select>
+      {selectedUnavailable && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          Wähle ein anderes Modell, bevor du generierst.
+        </p>
+      )}
     </div>
   )
 }

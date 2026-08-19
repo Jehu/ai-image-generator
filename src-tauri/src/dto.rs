@@ -106,9 +106,7 @@ pub struct UpdateStyleInput {
     pub model_id: Option<String>,
 }
 
-fn deserialize_explicit_null<'de, D>(
-    deserializer: D,
-) -> Result<Option<Option<String>>, D::Error>
+fn deserialize_explicit_null<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -211,7 +209,6 @@ pub struct AvailableModel {
     pub provider_id: String,
     pub model_id: String,
     pub label: String,
-    pub supports_references: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -231,9 +228,7 @@ pub struct SettingsInfo {
 /// Port von asImageKind() aus src/lib/kinds/types.ts.
 pub fn as_image_kind(value: Option<&str>) -> String {
     match value {
-        Some("foto") | Some("illustration") | Some("infografik") => {
-            value.unwrap().to_string()
-        }
+        Some("foto") | Some("illustration") | Some("infografik") => value.unwrap().to_string(),
         _ => "foto".to_string(),
     }
 }

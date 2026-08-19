@@ -5,7 +5,7 @@ use rusqlite::Connection;
 use tokio::sync::Mutex as AsyncMutex;
 
 use crate::config::{Config, Paths};
-use crate::provider::PriceCache;
+use crate::provider::{ImageModelCache, PriceCache};
 use crate::storage::LocalStorage;
 
 pub struct AppState {
@@ -16,21 +16,18 @@ pub struct AppState {
     pub db: Mutex<Connection>,
     pub http: reqwest::Client,
     pub price_cache: AsyncMutex<Option<PriceCache>>,
+    pub image_model_cache: AsyncMutex<Option<ImageModelCache>>,
 }
 
 impl AppState {
-    pub fn new(
-        config: Config,
-        paths: Paths,
-        db: Connection,
-        http: reqwest::Client,
-    ) -> Self {
+    pub fn new(config: Config, paths: Paths, db: Connection, http: reqwest::Client) -> Self {
         AppState {
             config: RwLock::new(config),
             paths,
             db: Mutex::new(db),
             http,
             price_cache: AsyncMutex::new(None),
+            image_model_cache: AsyncMutex::new(None),
         }
     }
 

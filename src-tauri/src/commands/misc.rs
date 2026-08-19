@@ -11,7 +11,7 @@ use crate::dto::{
 };
 use crate::error::{AppError, AppResult};
 use crate::llm;
-use crate::provider::OPENROUTER_MODELS;
+use crate::provider;
 use crate::state::AppState;
 
 // ---------- Analyze ----------
@@ -30,13 +30,8 @@ pub async fn analyze_style_from_image(
         ));
     }
     let config = state.config();
-    let style_json = llm::analyze_style(
-        &state.http,
-        &config,
-        &input.image_base64,
-        &input.mime_type,
-    )
-    .await?;
+    let style_json =
+        llm::analyze_style(&state.http, &config, &input.image_base64, &input.mime_type).await?;
     Ok(AnalyzeStyleOutput { style_json })
 }
 
@@ -64,8 +59,7 @@ pub async fn compile_style_brief(
 // ---------- Kamera-Bodys ----------
 
 fn camera_list(conn: &rusqlite::Connection) -> AppResult<Vec<String>> {
-    let mut stmt =
-        conn.prepare(r#"SELECT "name" FROM "CameraBody" ORDER BY "name" ASC"#)?;
+    let mut stmt = conn.prepare(r#"SELECT "name" FROM "CameraBody" ORDER BY "name" ASC"#)?;
     let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -115,21 +109,21 @@ pub async fn delete_camera_body(
 // ---------- Modelle ----------
 
 #[tauri::command]
-pub async fn list_available_models(
-    state: State<'_, AppState>,
-) -> AppResult<Vec<AvailableModel>> {
-    let mut out = Vec::new();
-    if state.config().openrouter_api_key().is_some() {
-        for m in OPENROUTER_MODELS {
-            out.push(AvailableModel {
-                provider_id: "openrouter".to_string(),
-                model_id: m.id.to_string(),
-                label: m.label.to_string(),
-                supports_references: m.supports_references,
-            });
-        }
+pub async fn list_available_models(state: State<'_, AppState>) -> AppResult<Vec<AvailableModel>> {
+    let config = state.config();
+    if config.openrouter_api_key().is_none() {
+        return Ok(Vec::new());
     }
-    Ok(out)
+    let models =
+        provider::available_image_models(&state.http, &config, &state.image_model_cache).await?;
+    Ok(models
+        .into_iter()
+        .map(|model| AvailableModel {
+            provider_id: "openrouter".to_string(),
+            model_id: model.id,
+            label: model.label,
+        })
+        .collect())
 }
 
 // ---------- Settings ----------
@@ -151,11 +145,9 @@ fn settings_info(state: &AppState) -> SettingsInfo {
     SettingsInfo {
         has_open_router_key: !openrouter.trim().is_empty(),
         open_router_key_masked: mask_key(openrouter),
-        open_router_key_source: config.source("OPENROUTER_API_KEY").map(|s| {
-            match s {
-                ConfigSource::Env => "env".to_string(),
-                ConfigSource::ConfigFile => "config".to_string(),
-            }
+        open_router_key_source: config.source("OPENROUTER_API_KEY").map(|s| match s {
+            ConfigSource::Env => "env".to_string(),
+            ConfigSource::ConfigFile => "config".to_string(),
         }),
         config_path: config_file_path(&state.paths.app_data_dir)
             .display()

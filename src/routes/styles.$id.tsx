@@ -105,6 +105,7 @@ function StyleDetail() {
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevelOpt>('high')
   const [provider, setProvider] = useState('openrouter')
   const [modelId, setModelId] = useState('google/gemini-3-pro-image-preview')
+  const [modelAvailable, setModelAvailable] = useState(true)
   const initialized = useRef<string | null>(null)
 
   useEffect(() => {
@@ -275,7 +276,8 @@ function StyleDetail() {
           </Link>
           <h1 className="text-2xl font-bold">{style.name}</h1>
           <p className="text-muted-foreground text-xs">
-            {getKind(style.kind).label} · Version {style.version} · {style.modelId}
+            {getKind(style.kind).label} · Version {style.version} ·{' '}
+            {style.modelId}
           </p>
         </div>
       </header>
@@ -303,7 +305,11 @@ function StyleDetail() {
             </label>
           </div>
 
-          <StyleEditor value={styleJson} onChange={setStyleJson} kind={style.kind} />
+          <StyleEditor
+            value={styleJson}
+            onChange={setStyleJson}
+            kind={style.kind}
+          />
 
           <AnchorManager styleId={id} />
 
@@ -314,6 +320,7 @@ function StyleDetail() {
               setProvider(p)
               setModelId(m)
             }}
+            onAvailabilityChange={setModelAvailable}
           />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -452,7 +459,7 @@ function StyleDetail() {
 
           <button
             onClick={() => generate.mutate()}
-            disabled={generate.isPending || motifCount === 0}
+            disabled={generate.isPending || motifCount === 0 || !modelAvailable}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {generate.isPending
@@ -641,7 +648,7 @@ function HistorySetDownloadButton({
       await downloadImagesAsZip(images, `${styleName}-${subject}`)
     },
     onError: (err) => {
-      alert((err).message)
+      alert(err.message)
     },
   })
   return (
