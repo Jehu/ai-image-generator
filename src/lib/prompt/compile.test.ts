@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compilePrompt, wrapPromptForCopy } from './compile'
+import { compilePrompt, renderPromptAsText, wrapPromptForCopy } from './compile'
 
 describe('compilePrompt', () => {
   it('verbindet Stil-Block mit subject', () => {
@@ -22,6 +22,21 @@ describe('compilePrompt', () => {
 
     const withoutRef = compilePrompt({ styleJson: { mood: 'calm' }, subject: 'x' })
     expect(withoutRef.promptObject.style_reference).toBeUndefined()
+  })
+})
+
+describe('renderPromptAsText', () => {
+  it('renders a prompt object without JSON syntax', () => {
+    expect(
+      renderPromptAsText({
+        style_reference: 'Match the reference image.',
+        camera: { lens_mm: 35 },
+        mood: 'calm',
+        subject: 'a red apple',
+      }),
+    ).toBe(
+      'Create an image of a red apple.\n\nStyle requirements:\n- Style reference: Match the reference image.\n- Camera:\n  - Lens mm: 35\n- Mood: calm',
+    )
   })
 })
 

@@ -6,8 +6,7 @@ use tauri::State;
 use crate::canonical::hash_style_json;
 use crate::db::now_iso;
 use crate::dto::{
-    as_image_kind, CreateStyleInput, GenerationDTO, StyleDTO, StyleVersionDTO,
-    UpdateStyleInput,
+    as_image_kind, CreateStyleInput, GenerationDTO, StyleDTO, StyleVersionDTO, UpdateStyleInput,
 };
 use crate::error::{AppError, AppResult};
 use crate::llm::build_style_brief;
@@ -49,8 +48,10 @@ pub async fn list_styles(
 ) -> AppResult<Vec<StyleDTO>> {
     let input = input.unwrap_or_default();
     let conn = state.db.lock().unwrap();
-    let mut styles: Vec<StyleDTO> =
-        repo::list_styles(&conn)?.into_iter().map(|r| r.dto).collect();
+    let mut styles: Vec<StyleDTO> = repo::list_styles(&conn)?
+        .into_iter()
+        .map(|r| r.dto)
+        .collect();
 
     if let Some(tag) = &input.tag {
         styles.retain(|s| s.tags.iter().any(|t| t == tag));
@@ -75,10 +76,7 @@ pub struct IdInput {
 }
 
 #[tauri::command]
-pub async fn get_style(
-    state: State<'_, AppState>,
-    input: IdInput,
-) -> AppResult<Option<StyleDTO>> {
+pub async fn get_style(state: State<'_, AppState>, input: IdInput) -> AppResult<Option<StyleDTO>> {
     let conn = state.db.lock().unwrap();
     Ok(repo::get_style(&conn, &input.id)?.map(|r| r.dto))
 }
@@ -105,8 +103,11 @@ pub async fn create_style(
     let now = now_iso();
     let tags = serde_json::to_string(&input.tags.unwrap_or_default())?;
     let style_json = serde_json::to_string(&input.style_json)?;
-    let default_params =
-        serde_json::to_string(&input.default_params.unwrap_or_else(|| Value::Object(Default::default())))?;
+    let default_params = serde_json::to_string(
+        &input
+            .default_params
+            .unwrap_or_else(|| Value::Object(Default::default())),
+    )?;
     let anchor_ids = serde_json::to_string(&input.anchor_image_ids.unwrap_or_default())?;
     let provider = input.provider.unwrap_or_else(|| "openrouter".to_string());
     let model_id = input
@@ -245,10 +246,7 @@ pub async fn update_style(
     }
 
     params.push(Box::new(input.id.clone()));
-    let sql = format!(
-        r#"UPDATE "Style" SET {} WHERE "id" = ?"#,
-        sets.join(", ")
-    );
+    let sql = format!(r#"UPDATE "Style" SET {} WHERE "id" = ?"#, sets.join(", "));
     conn.execute(
         &sql,
         rusqlite::params_from_iter(params.iter().map(|p| p.as_ref())),
@@ -289,13 +287,10 @@ pub async fn delete_style(
 }
 
 #[tauri::command]
-pub async fn duplicate_style(
-    state: State<'_, AppState>,
-    input: IdInput,
-) -> AppResult<StyleDTO> {
+pub async fn duplicate_style(state: State<'_, AppState>, input: IdInput) -> AppResult<StyleDTO> {
     let conn = state.db.lock().unwrap();
-    let src = repo::get_style(&conn, &input.id)?
-        .ok_or_else(|| AppError::msg("Stil nicht gefunden."))?;
+    let src =
+        repo::get_style(&conn, &input.id)?.ok_or_else(|| AppError::msg("Stil nicht gefunden."))?;
 
     let id = crate::ids::new_id();
     let now = now_iso();

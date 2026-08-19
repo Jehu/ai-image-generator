@@ -25,7 +25,22 @@ function Settings() {
         <p className="text-muted-foreground text-sm">Lade…</p>
       ) : (
         <div className="flex flex-col gap-4">
-          <ApiKeySection settings={data} />
+          <ApiKeySection
+            label="OpenRouter API-Key"
+            envName="OPENROUTER_API_KEY"
+            keyMasked={data.openRouterKeyMasked}
+            keySource={data.openRouterKeySource}
+            hasKey={data.hasOpenRouterKey}
+            placeholder="sk-or-v1-… (https://openrouter.ai/keys)"
+          />
+          <ApiKeySection
+            label="Venice API-Key"
+            envName="VENICE_API_KEY"
+            keyMasked={data.veniceKeyMasked}
+            keySource={data.veniceKeySource}
+            hasKey={data.hasVeniceKey}
+            placeholder="… (https://venice.ai/settings/api)"
+          />
           <Row label="Konfiguration">
             <code>{data.configPath}</code>
           </Row>
@@ -44,97 +59,65 @@ function Settings() {
 }
 
 function ApiKeySection({
-  settings,
+  label,
+  envName,
+  hasKey,
+  keyMasked,
+  keySource,
+  placeholder,
 }: {
-  settings: {
-    hasOpenRouterKey: boolean
-    openRouterKeyMasked: string | null
-    openRouterKeySource: 'env' | 'config' | null
-  }
+  label: string
+  envName: string
+  hasKey: boolean
+  keyMasked: string | null
+  keySource: 'env' | 'config' | null
+  placeholder: string
 }) {
   const queryClient = useQueryClient()
   const [key, setKey] = useState('')
-
-  // Env-Variable überschreibt den gespeicherten Key — Eingabe wäre wirkungslos.
-  const envOverride = settings.openRouterKeySource === 'env'
-
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ['settings'] })
-    queryClient.invalidateQueries({ queryKey: ['availableModels'] })
-  }
-
+  const envOverride = keySource === 'env'
+  const isVenice = envName === 'VENICE_API_KEY'
   const save = useMutation({
-    mutationFn: (k: string) => saveSettings({ data: { openrouterApiKey: k } }),
+    mutationFn: (value: string) =>
+      saveSettings({
+        data: isVenice ? { veniceApiKey: value } : { openrouterApiKey: value },
+      }),
     onSuccess: () => {
       setKey('')
-      invalidate()
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
+      queryClient.invalidateQueries({ queryKey: ['availableModels'] })
     },
   })
-
   return (
     <section className="rounded-md border p-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-sm font-semibold">OpenRouter API-Key</h2>
-        {settings.hasOpenRouterKey ? (
-          <span className="text-sm text-green-600">
-            gesetzt — {settings.openRouterKeyMasked}
-            {envOverride && ' (aus Umgebungsvariable)'}
-          </span>
-        ) : (
-          <span className="text-sm text-red-600">
-            nicht gesetzt — ohne Key sind keine Generierungen möglich
-          </span>
-        )}
+        <h2 className="text-sm font-semibold">{label}</h2>
+        <span className={`text-sm ${hasKey ? 'text-green-600' : 'text-red-600'}`}>
+          {hasKey ? `gesetzt — ${keyMasked}` : 'nicht gesetzt'}
+          {envOverride && ' (aus Umgebungsvariable)'}
+        </span>
       </div>
-
       {envOverride ? (
         <p className="text-muted-foreground mt-2 text-xs">
-          Der Key kommt aus der Umgebungsvariable{' '}
-          <code>OPENROUTER_API_KEY</code> und hat Vorrang — solange sie gesetzt
-          ist, sind Änderungen hier wirkungslos.
+          <code>{envName}</code> hat Vorrang; Änderungen hier sind wirkungslos.
         </p>
       ) : (
-        <>
-          <div className="mt-3 flex gap-2">
-            <input
-              type="password"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && key.trim()) save.mutate(key)
-              }}
-              placeholder="sk-or-v1-… (https://openrouter.ai/keys)"
-              autoComplete="off"
-              className="flex-1 rounded-md border bg-background p-2 text-sm"
-            />
-            <button
-              onClick={() => save.mutate(key)}
-              disabled={save.isPending || key.trim() === ''}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-            >
-              Speichern
+        <div className="mt-3 flex gap-2">
+          <input type="password" value={key} onChange={(e) => setKey(e.target.value)}
+            placeholder={placeholder} autoComplete="off"
+            className="flex-1 rounded-md border bg-background p-2 text-sm" />
+          <button onClick={() => save.mutate(key)} disabled={save.isPending || !key.trim()}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            Speichern
+          </button>
+          {hasKey && (
+            <button onClick={() => save.mutate('')} disabled={save.isPending}
+              className="rounded-md border px-4 py-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50">
+              Entfernen
             </button>
-            {settings.hasOpenRouterKey && (
-              <button
-                onClick={() => save.mutate('')}
-                disabled={save.isPending}
-                title="Gespeicherten Key entfernen"
-                className="rounded-md border px-4 py-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
-              >
-                Entfernen
-              </button>
-            )}
-          </div>
-          {save.isError && (
-            <p className="mt-1 text-sm text-red-600">{save.error.message}</p>
           )}
-          <p className="text-muted-foreground mt-2 text-xs">
-            Der Key wird lokal in der Konfigurationsdatei der App gespeichert
-            (nur für deinen Benutzer lesbar) und ausschließlich vom Rust-Backend
-            verwendet — er gelangt nie ins Frontend-Bundle und verlässt das
-            Gerät nur Richtung OpenRouter.
-          </p>
-        </>
+          {save.isError && <p className="mt-1 text-sm text-red-600">{save.error.message}</p>}
+        </div>
       )}
     </section>
   )

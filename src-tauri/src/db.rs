@@ -154,12 +154,8 @@ pub fn to_iso_string(dt: DateTime<Utc>) -> String {
 /// Json-Spalte tolerant lesen (TEXT mit JSON-String oder NULL).
 pub fn read_json(value: ValueRef<'_>) -> serde_json::Value {
     match value {
-        ValueRef::Text(bytes) => {
-            serde_json::from_slice(bytes).unwrap_or(serde_json::Value::Null)
-        }
-        ValueRef::Blob(bytes) => {
-            serde_json::from_slice(bytes).unwrap_or(serde_json::Value::Null)
-        }
+        ValueRef::Text(bytes) => serde_json::from_slice(bytes).unwrap_or(serde_json::Value::Null),
+        ValueRef::Blob(bytes) => serde_json::from_slice(bytes).unwrap_or(serde_json::Value::Null),
         _ => serde_json::Value::Null,
     }
 }

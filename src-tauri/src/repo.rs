@@ -59,17 +59,13 @@ pub fn get_style(conn: &Connection, id: &str) -> AppResult<Option<StyleRow>> {
 }
 
 pub fn list_styles(conn: &Connection) -> AppResult<Vec<StyleRow>> {
-    let sql =
-        format!(r#"SELECT {STYLE_COLUMNS} FROM "Style" ORDER BY "updatedAt" DESC"#);
+    let sql = format!(r#"SELECT {STYLE_COLUMNS} FROM "Style" ORDER BY "updatedAt" DESC"#);
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map([], map_style_row)?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-pub fn list_style_versions(
-    conn: &Connection,
-    style_id: &str,
-) -> AppResult<Vec<StyleVersionDTO>> {
+pub fn list_style_versions(conn: &Connection, style_id: &str) -> AppResult<Vec<StyleVersionDTO>> {
     let mut stmt = conn.prepare(
         r#"SELECT "version", "styleJson", "createdAt" FROM "StyleVersion"
            WHERE "styleId" = ?1 ORDER BY "version" DESC"#,
@@ -98,9 +94,7 @@ pub fn list_generations(
 ) -> AppResult<Vec<GenerationDTO>> {
     let base = r#"SELECT "id", "styleId", "subject", "compiledPrompt", "provider", "modelId", "params", "status", "errorMessage", "costUsd", "createdAt" FROM "Generation""#;
     let sql = match style_id {
-        Some(_) => format!(
-            r#"{base} WHERE "styleId" = ?1 ORDER BY "createdAt" DESC LIMIT ?2"#
-        ),
+        Some(_) => format!(r#"{base} WHERE "styleId" = ?1 ORDER BY "createdAt" DESC LIMIT ?2"#),
         None => format!(r#"{base} ORDER BY "createdAt" DESC LIMIT ?1"#),
     };
     let mut stmt = conn.prepare(&sql)?;
@@ -174,8 +168,7 @@ pub fn get_images_by_ids(conn: &Connection, ids: &[String]) -> AppResult<Vec<Ima
         return Ok(Vec::new());
     }
     let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
-    let sql =
-        format!(r#"SELECT "id", "path" FROM "Image" WHERE "id" IN ({placeholders})"#);
+    let sql = format!(r#"SELECT "id", "path" FROM "Image" WHERE "id" IN ({placeholders})"#);
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map(rusqlite::params_from_iter(ids.iter()), |row| {
         Ok(ImageRow {

@@ -23,7 +23,8 @@ pub async fn generate_image(
         return Err(AppError::msg("styleJson muss ein Objekt sein."));
     }
 
-    let model_id = provider::resolve_model(input.provider.as_deref(), input.model_id.as_deref())?;
+    let provider_id = input.provider.as_deref().unwrap_or("openrouter");
+    let model_id = provider::resolve_model(Some(provider_id), input.model_id.as_deref())?;
 
     // Anker-Bilder des Stils als Stil-Referenzen laden (stärkster Konsistenz-
     // Hebel, da keine Seeds). Anker zuerst, dann ad-hoc-Referenzen vom Client.
@@ -77,12 +78,13 @@ pub async fn generate_image(
 
     let config = state.config();
     let result = provider::generate(
+        provider_id,
         &state.http,
         &config,
         &state.price_cache,
         &state.image_model_cache,
         &model_id,
-        &compiled.prompt_text,
+        &compiled.prompt_object,
         &references,
         &params,
     )

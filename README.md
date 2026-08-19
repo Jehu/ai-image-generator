@@ -4,15 +4,15 @@ Native **Desktop-App** (macOS · Windows · Linux), um **reproduzierbare Bildsti
 KI-Bildgenerierung zu finden, zu fixieren und konsistent anzuwenden — über drei **Bildarten**:
 **Foto**, **Illustration** und **Infografik**. Bildmodelle laufen über **OpenRouter**
 (Nano Banana Pro / 2 / 1 = Gemini 3 Pro / 3.1 Flash / 2.5 Flash Image, GPT-5 Image,
-GPT-5 Image Mini) — ein einziger API-Key.
+GPT-5 Image Mini) oder **Venice.ai** — mit getrennt konfigurierbaren API-Keys.
 
 Die App ist ein Fork der Web-Variante
 ([ai-image-generator-ui](https://github.com/Jehu/ai-image-generator-ui)), umgebaut auf
 **Tauri 2 + Rust-Backend**: kein Server, kein Node zur Laufzeit — React-UI in der
 System-WebView, Datenhaltung und KI-Calls in Rust.
 
-**Workflow:** Im *Playground* die Bildart wählen, einen Stil per JSON/Formular finden → als
-Stil speichern → in *Produktion* nur noch das Motiv beschreiben → optisch konsistente Bilder.
+**Workflow:** Im _Playground_ die Bildart wählen, einen Stil per JSON/Formular finden → als
+Stil speichern → in _Produktion_ nur noch das Motiv beschreiben → optisch konsistente Bilder.
 Stile sind über Tags organisierbar und werden als strukturiertes JSON gespeichert.
 
 ![Image Style Studio – Stil-Editor links, Produktion und Historie rechts](docs/screenshot.jpg)
@@ -27,7 +27,7 @@ Stile sind über Tags organisierbar und werden als strukturiertes JSON gespeiche
 
 KI-Bildmodelle liefern beim selben Prompt jedes Mal einen leicht anderen Look — ein Problem,
 sobald man eine **einheitliche Bildsprache** braucht (Blog, Shop, Social Media, Markenauftritt).
-Image Style Studio trennt **Stil** von **Motiv**: Du legst den fotografischen Look *einmal* fest
+Image Style Studio trennt **Stil** von **Motiv**: Du legst den fotografischen Look _einmal_ fest
 (Kamera, Optik, Licht, Farbe, Stimmung …), speicherst ihn und wendest ihn auf beliebig viele
 Motive an — so wirken alle Bilder „wie aus einer Serie", statt zufällig zusammengewürfelt.
 
@@ -43,16 +43,15 @@ Bild den Prompt neu zu tüfteln.
   - **Illustration** — gezeichnet/gerendert: Technik, Linien, Schattierung, Farbharmonie, Textur.
   - **Infografik** — Daten visuell: Layout, Icon-System, Farb-System, Typografie (Daten kommen
     übers Motiv).
-- **Stile definieren** — den Look als strukturiertes Formular *oder* JSON festlegen, z. B. bei Foto:
+- **Stile definieren** — den Look als strukturiertes Formular _oder_ JSON festlegen, z. B. bei Foto:
   Kamera-Body, Brennweite, Blende, Licht-Setup, Farbpalette, Film-Emulation, Stimmung, Negativ-Guards.
 - **Stil aus einem Bild ableiten** — ein vorhandenes (Kunden-)Foto hochladen; eine Vision-Analyse
   füllt das Stil-Formular automatisch vor und trifft Marken-Looks schnell.
 - **Konsistenz über Anker** — Referenzbilder an einen Stil pinnen; sie werden bei jeder Produktion
-  mitgeschickt und heben die optische Konsistenz deutlich an (siehe unten).
-- **In Produktion gehen** — gespeicherten Stil wählen, nur noch Motive beschreiben (eine pro Zeile
-  = Stapel) und konsistente Varianten erzeugen.
-- **Modell wählen** — kuratierte Bildmodelle über **OpenRouter** (ein Key für alle Anbieter);
-  das Modell ist pro Generierung umschaltbar.
+  an Modelle mit Stil-Anker-Support mitgeschickt und heben die optische Konsistenz deutlich an
+  (siehe unten).
+- **Modell wählen** — Bildmodelle werden zur Laufzeit über **OpenRouter** und **Venice.ai** geladen;
+  die Auswahl markiert Modelle mit `· Stil-Anker` und zeigt, ob das gewählte Modell Anker unterstützt.
 - **Bibliothek** — Stile taggen, durchsuchen, duplizieren und versionieren.
 - **Ergebnisse verwalten** — Historie mit Vorschau, Lightbox, Original-Download, Stapel-Download
   als ZIP sowie Kosten- und Modellanzeige pro Lauf.
@@ -67,8 +66,8 @@ Bild den Prompt neu zu tüfteln.
 - Eine **Social-Media-Serie** mit wiedererkennbarer Ästhetik.
 - Einen **Marken- oder Kunden-Look** schnell treffen — per „Stil aus Bild ableiten".
 
-> Hinweis: Du brauchst einen eigenen **OpenRouter-API-Key** (https://openrouter.ai/keys) —
-> einfach in den **Einstellungen** der App eintragen. Generierungen laufen über deinen Account
+> Hinweis: Du brauchst mindestens einen eigenen **OpenRouter-** (https://openrouter.ai/keys) oder
+> **Venice.ai-API-Key** (https://venice.ai/settings/api). Generierungen laufen über deinen Account
 > und verursachen die jeweiligen Anbieterkosten; die Kosten pro Lauf werden angezeigt
 > (bevorzugt aus `usage.cost` der API-Antwort).
 
@@ -82,15 +81,15 @@ npm install
 npm run dev:desktop         # Desktop-App im Dev-Modus (Vite + Tauri)
 ```
 
-**API-Key:** Den OpenRouter-Key trägst du direkt in der App unter **Einstellungen** ein —
-er wird in `config.json` im App-Data-Verzeichnis gespeichert (Dateirechte 0600, nur das
-Rust-Backend liest ihn) und ist nie Teil der Anwendung:
+**API-Keys:** OpenRouter- und Venice.ai-Keys trägst du direkt in der App unter **Einstellungen** ein —
+sie werden in `config.json` im App-Data-Verzeichnis gespeichert (Dateirechte 0600, nur das
+Rust-Backend liest sie) und sind nie Teil der Anwendung:
 macOS `~/Library/Application Support/de.michelyweb.imagestylestudio/`,
 Linux `~/.local/share/de.michelyweb.imagestylestudio/`, Windows `%APPDATA%\de.michelyweb.imagestylestudio\`.
 
 Alternativ (z. B. für Entwicklung/CI) per Umgebungsvariable: `cp .env.example .env` und
-`OPENROUTER_API_KEY` setzen. **Eine gesetzte Env-Variable hat Vorrang** vor dem in der UI
-gespeicherten Key; die Einstellungen-Seite zeigt die wirksame Quelle an.
+`OPENROUTER_API_KEY` und/oder `VENICE_API_KEY` setzen. **Eine gesetzte Env-Variable hat Vorrang**
+vor dem in der UI gespeicherten Key; die Einstellungen-Seite zeigt die wirksame Quelle an.
 
 **Datenübernahme aus der Web-App:** Beim ersten Start sucht die App eine bestehende
 `prisma/data/dev.db` + `data/images/` (im Arbeitsverzeichnis oder via `LEGACY_DATA_DIR`)
@@ -99,16 +98,16 @@ und übernimmt sie automatisch ins App-Data-Verzeichnis. Die Übernahme läuft g
 
 ## Scripts
 
-| Script | Zweck |
-|---|---|
-| `npm run dev:desktop` | Desktop-App im Dev-Modus (Hot-Reload) |
-| `npm run build:release` | Release-Bundle inkl. Updater-Signatur (lädt den Key aus `~/.tauri/`) |
-| `npm run build:release:universal` | wie oben, als macOS-Universal-Build (Apple Silicon + Intel) |
-| `npm run build:desktop` | Desktop-Bundles ohne Updater-Signatur (CI setzt den Key via Secret) |
-| `npm run dev` | Nur das Frontend im Browser (ohne Backend-Funktionen) |
-| `npm run build` | Frontend-Produktions-Build (`dist/`) |
-| `npm test` | Frontend-Unit-Tests (Vitest) |
-| `cargo test` (in `src-tauri/`) | Rust-Unit-Tests (Prompt, Hashing, Storage, DB) |
+| Script                            | Zweck                                                                |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `npm run dev:desktop`             | Desktop-App im Dev-Modus (Hot-Reload)                                |
+| `npm run build:release`           | Release-Bundle inkl. Updater-Signatur (lädt den Key aus `~/.tauri/`) |
+| `npm run build:release:universal` | wie oben, als macOS-Universal-Build (Apple Silicon + Intel)          |
+| `npm run build:desktop`           | Desktop-Bundles ohne Updater-Signatur (CI setzt den Key via Secret)  |
+| `npm run dev`                     | Nur das Frontend im Browser (ohne Backend-Funktionen)                |
+| `npm run build`                   | Frontend-Produktions-Build (`dist/`)                                 |
+| `npm test`                        | Frontend-Unit-Tests (Vitest)                                         |
+| `cargo test` (in `src-tauri/`)    | Rust-Unit-Tests (Prompt, Hashing, Storage, DB)                       |
 
 ## Installation (Nutzer)
 
@@ -153,9 +152,9 @@ React 19 SPA (System-WebView)          Rust-Backend (src-tauri/)
 - **Rust-Backend** (`src-tauri/src/`): portiert die komplette Server-Logik.
   SQLite-Schema und DTO-Shapes (camelCase, ISO-Dates) sind 1:1 kompatibel zur Web-App —
   eine migrierte `dev.db` funktioniert ohne Umbau.
-- **Provider**: nur **OpenRouter** (Chat-Completions, `modalities:["image","text"]`,
-  `image_config` für die Gemini-Familie, Kosten aus `usage.cost` mit Live-Preis-Fallback,
-  6 h gecacht). Stil-Analyse (Vision) und Style-Briefs laufen ebenfalls über OpenRouter
+- **Provider**: **OpenRouter** und **Venice.ai** für Bildgenerierung. Die Modelllisten werden
+  zur Laufzeit geladen und enthalten modellbezogene Auflösungs-, Seitenverhältnis-, Varianten- und
+  Stil-Anker-Capabilities. Stil-Analyse (Vision) und Style-Briefs laufen über OpenRouter
   (Default `google/gemini-2.5-flash`, via `OPENROUTER_ANALYSIS_MODEL` /
   `OPENROUTER_BRIEF_MODEL` änderbar). Legacy-Stile mit `provider: "gemini"` werden
   transparent auf das OpenRouter-Pendant gemappt.
@@ -164,15 +163,18 @@ React 19 SPA (System-WebView)          Rust-Backend (src-tauri/)
   und PresetPicker rendern generisch aus der aktiven Bildart; `looseObject` → eigene
   JSON-Felder bleiben erhalten.
 - **Prompt-Kompilierung**: in Rust (`prompt.rs`) für die Generierung, in TS
-  (`src/lib/prompt/compile.ts`) für die Live-Vorschau — beide erzeugen identischen Output
-  (Key-Reihenfolge inklusive; Rust nutzt `serde_json` mit `preserve_order`).
+  (`src/lib/prompt/compile.ts`) für die Live-Vorschau. Der kanonische Prompt bleibt strukturiertes
+  JSON für Speicherung, Reproduzierbarkeit und Kopieren; für jeden Modell-Request wird daraus
+  deterministischer Klartext gerendert. Die Vorschau lässt zwischen JSON und Klartext umschalten.
 - **Datenmodell** (SQLite): `Style`, `StyleVersion`, `Generation`, `Image`, `CameraBody` —
   identisch zum früheren Prisma-Schema; Arrays/Objekte als JSON-Spalten.
 
 ### Konsistenz-Mechanik
+
 Die Bildmodelle haben **keine Seeds**. Reine Prompts erreichen ~50–65 % Konsistenz.
-Der stärkste Hebel sind **Stil-Anker** (Referenzbilder, bis 11): ein gespeicherter Stil pinnt
-optional Anker-Bilder, die bei jeder Produktion als Referenz mitgeschickt werden → ~80–95 %.
+Der stärkste Hebel sind **Stil-Anker**: ein gespeicherter Stil pinnt optionale Referenzbilder,
+die bei jeder Produktion an Modelle mit gemeldetem Stil-Anker-Support mitgeschickt werden. Die
+zulässige Anzahl richtet sich dynamisch nach dem gewählten Modell.
 
 ## Wichtige Implementierungs-Hinweise
 

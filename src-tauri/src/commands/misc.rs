@@ -111,19 +111,33 @@ pub async fn delete_camera_body(
 #[tauri::command]
 pub async fn list_available_models(state: State<'_, AppState>) -> AppResult<Vec<AvailableModel>> {
     let config = state.config();
-    if config.openrouter_api_key().is_none() {
-        return Ok(Vec::new());
+    let mut available = Vec::new();
+    for provider_id in ["openrouter", "venice"] {
+        let configured = match provider_id {
+            "openrouter" => config.openrouter_api_key().is_some(),
+            "venice" => config.venice_api_key().is_some(),
+            _ => false,
+        };
+        if configured {
+            available.extend(
+                provider::available_image_models(
+                    provider_id,
+                    &state.http,
+                    &config,
+                    &state.image_model_cache,
+                )
+                .await?
+                .into_iter()
+                .map(|model| AvailableModel {
+                    provider_id: provider_id.to_string(),
+                    model_id: model.id,
+                    label: model.label,
+                    supports_style_references: model.max_references > 0,
+                }),
+            );
+        }
     }
-    let models =
-        provider::available_image_models(&state.http, &config, &state.image_model_cache).await?;
-    Ok(models
-        .into_iter()
-        .map(|model| AvailableModel {
-            provider_id: "openrouter".to_string(),
-            model_id: model.id,
-            label: model.label,
-        })
-        .collect())
+    Ok(available)
 }
 
 // ---------- Settings ----------
@@ -142,13 +156,20 @@ fn mask_key(key: &str) -> Option<String> {
 fn settings_info(state: &AppState) -> SettingsInfo {
     let config = state.config();
     let openrouter = config.get("OPENROUTER_API_KEY").unwrap_or("");
+    let venice = config.get("VENICE_API_KEY").unwrap_or("");
+    let source = |key| {
+        config.source(key).map(|source| match source {
+            ConfigSource::Env => "env".to_string(),
+            ConfigSource::ConfigFile => "config".to_string(),
+        })
+    };
     SettingsInfo {
         has_open_router_key: !openrouter.trim().is_empty(),
         open_router_key_masked: mask_key(openrouter),
-        open_router_key_source: config.source("OPENROUTER_API_KEY").map(|s| match s {
-            ConfigSource::Env => "env".to_string(),
-            ConfigSource::ConfigFile => "config".to_string(),
-        }),
+        open_router_key_source: source("OPENROUTER_API_KEY"),
+        has_venice_key: !venice.trim().is_empty(),
+        venice_key_masked: mask_key(venice),
+        venice_key_source: source("VENICE_API_KEY"),
         config_path: config_file_path(&state.paths.app_data_dir)
             .display()
             .to_string(),
@@ -165,21 +186,31 @@ pub async fn get_settings_info(state: State<'_, AppState>) -> AppResult<Settings
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveSettingsInput {
-    /// Neuer OpenRouter-API-Key; leerer String entfernt den gespeicherten Key.
-    pub openrouter_api_key: String,
+    pub openrouter_api_key: Option<String>,
+    pub venice_api_key: Option<String>,
 }
 
-/// Speichert den API-Key in config.json (App-Data-Verzeichnis) und lädt die
-/// Konfiguration neu. Eine gesetzte Env-Variable behält Vorrang — die UI
-/// zeigt das über `openRouterKeySource: "env"` an.
 #[tauri::command]
 pub async fn save_settings(
     state: State<'_, AppState>,
     input: SaveSettingsInput,
 ) -> AppResult<SettingsInfo> {
-    let key = input.openrouter_api_key.trim().to_string();
-    let value = if key.is_empty() { None } else { Some(key) };
-    update_config_file(&state.paths.app_data_dir, &[("OPENROUTER_API_KEY", value)])?;
+    let update = |key: &'static str, value: Option<String>| {
+        value.map(move |value| {
+            (
+                key,
+                (!value.trim().is_empty()).then_some(value.trim().to_string()),
+            )
+        })
+    };
+    let mut updates = Vec::new();
+    if let Some(update) = update("OPENROUTER_API_KEY", input.openrouter_api_key) {
+        updates.push(update);
+    }
+    if let Some(update) = update("VENICE_API_KEY", input.venice_api_key) {
+        updates.push(update);
+    }
+    update_config_file(&state.paths.app_data_dir, &updates)?;
     state.reload_config();
     Ok(settings_info(&state))
 }

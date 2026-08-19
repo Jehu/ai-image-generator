@@ -70,10 +70,11 @@ async fn chat_completion(
     .await?;
 
     let status = res.status();
-    let json: Value = res
-        .json()
-        .await
-        .map_err(|_| AppError::msg(format!("OpenRouter-Antwort konnte nicht gelesen werden (HTTP {status}).")))?;
+    let json: Value = res.json().await.map_err(|_| {
+        AppError::msg(format!(
+            "OpenRouter-Antwort konnte nicht gelesen werden (HTTP {status})."
+        ))
+    })?;
 
     if !status.is_success() {
         let msg = json["error"]["message"]
