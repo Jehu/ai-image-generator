@@ -52,6 +52,9 @@ Bild den Prompt neu zu tüfteln.
   (siehe unten).
 - **Modell wählen** — Bildmodelle werden zur Laufzeit über **OpenRouter** und **Venice.ai** geladen;
   die Auswahl markiert Modelle mit `· Stil-Anker` und zeigt, ob das gewählte Modell Anker unterstützt.
+  Unterstützte Auflösungen, Seitenverhältnisse, Bildanzahl und Referenzbilder werden bei der
+  Generierung automatisch berücksichtigt. Entfernte Modelle bleiben in gespeicherten Stilen sichtbar;
+  vor einer Generierung fordert die App zur expliziten Auswahl eines Ersatzes auf.
 - **Bibliothek** — Stile taggen, durchsuchen, duplizieren und versionieren.
 - **Ergebnisse verwalten** — Historie mit Vorschau, Lightbox, Original-Download, Stapel-Download
   als ZIP sowie Kosten- und Modellanzeige pro Lauf.

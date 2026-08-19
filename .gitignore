@@ -42,3 +42,6 @@ coverage
 
 # Tauri (Rust-Backend)
 src-tauri/target
+
+# Lokale Git-Worktrees
+.worktrees/
