@@ -2,9 +2,9 @@
 
 Native **Desktop-App** (macOS · Windows · Linux), um **reproduzierbare Bildstile** für
 KI-Bildgenerierung zu finden, zu fixieren und konsistent anzuwenden — über drei **Bildarten**:
-**Foto**, **Illustration** und **Infografik**. Bildmodelle laufen über **OpenRouter**
-(Nano Banana Pro / 2 / 1 = Gemini 3 Pro / 3.1 Flash / 2.5 Flash Image, GPT-5 Image,
-GPT-5 Image Mini) — ein einziger API-Key.
+**Foto**, **Illustration** und **Infografik**. Bildmodelle laufen über **OpenRouter** —
+der Katalog wird zur Laufzeit geladen; neue unterstützte Bildmodelle erscheinen ohne
+App-Release. Ein einziger API-Key genügt.
 
 Die App ist ein Fork der Web-Variante
 ([ai-image-generator-ui](https://github.com/Jehu/ai-image-generator-ui)), umgebaut auf
@@ -51,8 +51,10 @@ Bild den Prompt neu zu tüfteln.
   mitgeschickt und heben die optische Konsistenz deutlich an (siehe unten).
 - **In Produktion gehen** — gespeicherten Stil wählen, nur noch Motive beschreiben (eine pro Zeile
   = Stapel) und konsistente Varianten erzeugen.
-- **Modell wählen** — kuratierte Bildmodelle über **OpenRouter** (ein Key für alle Anbieter);
-  das Modell ist pro Generierung umschaltbar.
+- **Modell wählen** — aktuelle, bildfähige OpenRouter-Modelle werden dynamisch geladen;
+  ihre unterstützten Auflösungen, Seitenverhältnisse, Bildanzahl und Referenzbilder werden
+  bei der Generierung automatisch berücksichtigt. Entfernte Modelle bleiben in gespeicherten
+  Stilen sichtbar; vor einer Generierung fordert die App zur expliziten Auswahl eines Ersatzes auf.
 - **Bibliothek** — Stile taggen, durchsuchen, duplizieren und versionieren.
 - **Ergebnisse verwalten** — Historie mit Vorschau, Lightbox, Original-Download, Stapel-Download
   als ZIP sowie Kosten- und Modellanzeige pro Lauf.
@@ -153,9 +155,11 @@ React 19 SPA (System-WebView)          Rust-Backend (src-tauri/)
 - **Rust-Backend** (`src-tauri/src/`): portiert die komplette Server-Logik.
   SQLite-Schema und DTO-Shapes (camelCase, ISO-Dates) sind 1:1 kompatibel zur Web-App —
   eine migrierte `dev.db` funktioniert ohne Umbau.
-- **Provider**: nur **OpenRouter** (Chat-Completions, `modalities:["image","text"]`,
-  `image_config` für die Gemini-Familie, Kosten aus `usage.cost` mit Live-Preis-Fallback,
-  6 h gecacht). Stil-Analyse (Vision) und Style-Briefs laufen ebenfalls über OpenRouter
+- **Provider**: nur **OpenRouter**. Die App lädt bildfähige Modelle über
+  `GET /api/v1/images/models` (6 h im Speicher gecacht) und generiert über
+  `POST /api/v1/images`. Modellfähigkeiten begrenzen Referenzbilder, Auflösung,
+  Seitenverhältnis und Varianten; Kosten kommen aus `usage.cost` mit Live-Preis-Fallback.
+  Stil-Analyse (Vision) und Style-Briefs laufen ebenfalls über OpenRouter
   (Default `google/gemini-2.5-flash`, via `OPENROUTER_ANALYSIS_MODEL` /
   `OPENROUTER_BRIEF_MODEL` änderbar). Legacy-Stile mit `provider: "gemini"` werden
   transparent auf das OpenRouter-Pendant gemappt.
@@ -170,9 +174,9 @@ React 19 SPA (System-WebView)          Rust-Backend (src-tauri/)
   identisch zum früheren Prisma-Schema; Arrays/Objekte als JSON-Spalten.
 
 ### Konsistenz-Mechanik
-Die Bildmodelle haben **keine Seeds**. Reine Prompts erreichen ~50–65 % Konsistenz.
-Der stärkste Hebel sind **Stil-Anker** (Referenzbilder, bis 11): ein gespeicherter Stil pinnt
-optional Anker-Bilder, die bei jeder Produktion als Referenz mitgeschickt werden → ~80–95 %.
+Der stärkste Hebel sind **Stil-Anker** (Referenzbilder; Anzahl modellabhängig): ein
+gespeicherter Stil pinnt optional Anker-Bilder, die bei jeder Produktion als Referenz
+mitgeschickt werden → ~80–95 %.
 
 ## Wichtige Implementierungs-Hinweise
 
