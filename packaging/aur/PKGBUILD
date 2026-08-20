@@ -4,7 +4,7 @@
 # (siehe packaging/aur/README.md), .SRCINFO neu generieren.
 
 pkgname=image-style-studio-bin
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="Reproduzierbare Bildstile für KI-Bildgenerierung finden, fixieren und konsistent anwenden (Tauri-Desktop-App, OpenRouter)"
 arch=('x86_64')
@@ -24,7 +24,7 @@ provides=('image-style-studio')
 conflicts=('image-style-studio')
 options=('!strip')
 source_x86_64=("${pkgname}-${pkgver}.deb::${url}/releases/download/v${pkgver}/Image.Style.Studio_${pkgver}_amd64.deb")
-sha256sums_x86_64=('9377699fd6b00da2018e33947ebde57645fbe40fb49862c625b18b4a133c3cc0')
+sha256sums_x86_64=('28923af2b006947b87a31ad8dfb8d77ae3a8ac00880ece668b4348a5c8583c18')
 
 package() {
   bsdtar -xOf "${pkgname}-${pkgver}.deb" data.tar.gz | bsdtar -xzf - -C "${pkgdir}"
