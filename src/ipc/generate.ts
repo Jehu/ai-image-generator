@@ -27,5 +27,13 @@ export interface GenerateOutput {
 export async function generateImage(opts: {
   data: GenerateInput
 }): Promise<GenerateOutput> {
-  return invoke<GenerateOutput>('generate_image', { input: opts.data })
+  try {
+    return await invoke<GenerateOutput>('generate_image', { input: opts.data })
+  } catch (error) {
+    if (error instanceof Error) throw error
+    if (typeof error === 'string' && error.trim()) throw new Error(error)
+    throw new Error(
+      'Die Bildgenerierung ist fehlgeschlagen. Bitte versuche es erneut.',
+    )
+  }
 }
