@@ -61,6 +61,7 @@ pub fn run() {
             commands::images::add_anchor_image,
             commands::images::remove_anchor_image,
             // misc
+            commands::misc::app_version,
             commands::misc::analyze_style_from_image,
             commands::misc::compile_style_brief,
             commands::misc::list_camera_bodies,

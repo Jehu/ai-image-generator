@@ -36,6 +36,7 @@ function RootLayout() {
             <NavLink to="/">Playground</NavLink>
             <NavLink to="/styles">Bibliothek</NavLink>
             <NavLink to="/settings">Einstellungen</NavLink>
+            <NavLink to="/help">Hilfe</NavLink>
           </div>
         </div>
       </nav>

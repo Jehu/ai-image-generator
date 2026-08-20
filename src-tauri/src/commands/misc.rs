@@ -14,6 +14,11 @@ use crate::llm;
 use crate::provider;
 use crate::state::AppState;
 
+#[tauri::command]
+pub fn app_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 // ---------- Analyze ----------
 
 #[tauri::command]

@@ -111,7 +111,7 @@ function Playground() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Image Style Studio</h1>
         <p className="text-muted-foreground text-sm">
-          Playground — Stil + Motiv testen (Gemini 3 Pro Image)
+          Playground — Stil + Motiv testen
         </p>
       </header>
 

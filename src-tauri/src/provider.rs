@@ -297,6 +297,19 @@ fn build_image_request(
     body
 }
 
+fn variant_batches(count: u32, max_per_request: u32) -> Vec<u32> {
+    let mut remaining = count.max(1);
+    let max_per_request = max_per_request.max(1);
+    let mut batches = Vec::with_capacity(remaining.div_ceil(max_per_request) as usize);
+    while remaining > 0 {
+        let batch = remaining.min(max_per_request);
+        batches.push(batch);
+        remaining -= batch;
+    }
+    batches
+}
+
+
 fn build_venice_image_request(
     model: &ImageModel,
     prompt_text: &str,
@@ -536,32 +549,39 @@ pub async fn generate(
             "Das Modell '{model_id}' ist bei {provider} nicht mehr verfügbar. Wähle ein anderes Bildmodell."
         )))?;
     let prompt_text = prompt_for_request(prompt_object);
-    let result = generate_once(
-        provider,
-        http,
-        config,
-        &model,
-        &prompt_text,
-        references,
-        params,
-    )
-    .await?;
-    if result.images.is_empty() {
+    let mut images = Vec::new();
+    let mut provider_cost = 0.0;
+    for count in variant_batches(params.count.unwrap_or(1), model.max_count) {
+        let batch_params = GenerateParams {
+            count: Some(count),
+            ..params.clone()
+        };
+        let result = generate_once(
+            provider,
+            http,
+            config,
+            &model,
+            &prompt_text,
+            references,
+            &batch_params,
+        )
+        .await?;
+        provider_cost += result.cost;
+        images.extend(result.images);
+    }
+    if images.is_empty() {
         return Err(AppError::msg(format!(
             "{provider} hat kein Bild zurückgegeben (evtl. Safety-Filter, ungültiger Prompt oder das Modell liefert keinen Bild-Output)."
         )));
     }
-    let cost_usd = if result.cost > 0.0 {
-        result.cost
+    let cost_usd = if provider_cost > 0.0 {
+        provider_cost
     } else if provider == "openrouter" {
-        image_price_for(http, config, price_cache, model_id).await * result.images.len() as f64
+        image_price_for(http, config, price_cache, model_id).await * images.len() as f64
     } else {
         venice_image_price_for(http, config, model_id, params).await
     };
-    Ok(GenerateResult {
-        images: result.images,
-        cost_usd,
-    })
+    Ok(GenerateResult { images, cost_usd })
 }
 
 /// Legacy-Mapping: Stile/Aufrufe aus der Web-App-Ära (direkter Gemini-Provider)
@@ -731,6 +751,12 @@ mod tests {
             body["input_references"][0]["image_url"]["url"],
             "data:image/png;base64,QUJD"
         );
+    }
+
+    #[test]
+    fn splits_requested_variants_across_model_limit() {
+        assert_eq!(variant_batches(2, 1), [1, 1]);
+        assert_eq!(variant_batches(5, 2), [2, 2, 1]);
     }
 
     #[test]

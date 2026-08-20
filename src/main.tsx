@@ -6,29 +6,11 @@ import { isTauri } from '@tauri-apps/api/core'
 
 import { getRouter } from './router'
 import { getContext } from './integrations/tanstack-query/root-provider'
+import { checkForUpdates } from './lib/updates'
+
 
 import './styles.css'
 
-// Auto-Update: beim Start still prüfen; Installation nur nach Rückfrage.
-async function checkForUpdates() {
-  try {
-    const { check } = await import('@tauri-apps/plugin-updater')
-    const update = await check()
-    if (!update) return
-    const { ask } = await import('@tauri-apps/plugin-dialog')
-    const yes = await ask(
-      `Version ${update.version} ist verfügbar. Jetzt herunterladen und installieren?`,
-      { title: 'Update verfügbar' },
-    )
-    if (yes) {
-      await update.downloadAndInstall()
-      const { relaunch } = await import('@tauri-apps/plugin-process')
-      await relaunch()
-    }
-  } catch {
-    // Offline oder Update-Endpoint nicht erreichbar — still ignorieren.
-  }
-}
 if (isTauri()) void checkForUpdates()
 
 const context = getContext()

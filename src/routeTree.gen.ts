@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StylesIndexRouteImport } from './routes/styles.index'
 import { Route as StylesIdRouteImport } from './routes/styles.$id'
@@ -17,6 +18,11 @@ import { Route as StylesIdRouteImport } from './routes/styles.$id'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,12 +43,14 @@ const StylesIdRoute = StylesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/help': typeof HelpRoute
   '/settings': typeof SettingsRoute
   '/styles/$id': typeof StylesIdRoute
   '/styles/': typeof StylesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/help': typeof HelpRoute
   '/settings': typeof SettingsRoute
   '/styles/$id': typeof StylesIdRoute
   '/styles': typeof StylesIndexRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/help': typeof HelpRoute
   '/settings': typeof SettingsRoute
   '/styles/$id': typeof StylesIdRoute
   '/styles/': typeof StylesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/styles/$id' | '/styles/'
+  fullPaths: '/' | '/help' | '/settings' | '/styles/$id' | '/styles/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/styles/$id' | '/styles'
-  id: '__root__' | '/' | '/settings' | '/styles/$id' | '/styles/'
+  to: '/' | '/help' | '/settings' | '/styles/$id' | '/styles'
+  id: '__root__' | '/' | '/help' | '/settings' | '/styles/$id' | '/styles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HelpRoute: typeof HelpRoute
   SettingsRoute: typeof SettingsRoute
   StylesIdRoute: typeof StylesIdRoute
   StylesIndexRoute: typeof StylesIndexRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HelpRoute: HelpRoute,
   SettingsRoute: SettingsRoute,
   StylesIdRoute: StylesIdRoute,
   StylesIndexRoute: StylesIndexRoute,
